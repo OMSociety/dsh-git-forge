@@ -1,0 +1,4 @@
+# dsh-git-forge bundle mount
+- insert:
+    - id: git-forge
+      name: dsh-git-forge

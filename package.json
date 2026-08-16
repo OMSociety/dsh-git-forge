@@ -1,0 +1,68 @@
+{
+  "name": "dsh-git-forge",
+  "version": "0.1.1",
+  "description": "GitHub/Gitea (and other forge) accounts with project-scoped grants and push policy for DeepSeek Harness better-sidebar",
+  "type": "module",
+  "license": "MIT",
+  "author": "thirsty5034",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thirsty5034/dsh-git-forge.git"
+  },
+  "homepage": "https://github.com/thirsty5034/dsh-git-forge#readme",
+  "bugs": {
+    "url": "https://github.com/thirsty5034/dsh-git-forge/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "git",
+    "github",
+    "gitea",
+    "cordis",
+    "better-sidebar"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "test": "node scripts/smoke-test.mjs",
+    "check": "node --check lib/index.js && node scripts/smoke-test.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-locale"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "dsh-better-sidebar": ">=0.12.0"
+  },
+  "files": [
+    "CHANGELOG.md",
+    "CHANGELOG.zh-CN.md",
+    "LICENSE",
+    "README.md",
+    "README.zh-CN.md",
+    "cordis.patch.yml",
+    "lib",
+    "scripts/install.sh",
+    "scripts/install.ps1"
+  ]
+}

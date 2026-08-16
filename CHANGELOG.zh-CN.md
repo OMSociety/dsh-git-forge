@@ -1,0 +1,24 @@
+# 更新日志
+
+[English](./CHANGELOG.md) | [简体中文](./CHANGELOG.zh-CN.md)
+
+## 0.1.1
+
+### 社区发布形态
+- 对齐 dsh-better-sidebar 的公开仓库结构  
+- 增加 `scripts/install.sh` / `install.ps1`（默认 GitHub；`--from npm` 预留）  
+- package.json：`repository` / `homepage` / `bugs` / `publishConfig`  
+
+### 功能
+- Gitea/GitLab：保存/探测时自动补全 API 路径（站点根 → `/api/v1` 或 `/api/v4`）  
+- 探测增加 10s 超时，返回具体 URL 与失败原因  
+- 账号行内显示探测成功/失败  
+
+## 0.1.0
+
+- 首版：better-sidebar「Git 凭据」Tab  
+- 账号库（GitHub / Gitea / GitLab / Gitee / Bitbucket）  
+- 按项目授权 + enforce push  
+- Host `tools.guard` 拦截未授权 `git push` / `git remote add|set-url`  
+- 模型工具 `GitForge`  
+- UI 对齐 dsh-ssh-tunnel  
