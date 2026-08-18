@@ -2,6 +2,14 @@
 
 [English](./CHANGELOG.md) | [简体中文](./CHANGELOG.zh-CN.md)
 
+## 0.1.4 — 2026-08-18
+
+### 修复
+- agent shell 注入 **`DSH_GIT_FORGE_PROJECT`**（会话工作区），子仓 cwd 仍用工作区授权
+- helper 在无 env 时 **向上匹配** `/workspace` 下 grants key
+- push guard 对裸 **`git push` / `git push origin`** 同步解析 `remote get-url` 再裁决
+- 文档与 `get_policy` 补充 project key 来源与 `list_accounts`
+
 ## 0.1.3 — 2026-08-18
 
 ### 新增

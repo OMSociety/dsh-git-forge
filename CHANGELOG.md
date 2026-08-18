@@ -2,6 +2,14 @@
 
 [English](./CHANGELOG.md) | [简体中文](./CHANGELOG.zh-CN.md)
 
+## 0.1.4 — 2026-08-18
+
+### Fixed
+- Inject **`DSH_GIT_FORGE_PROJECT`** (session workspace) into agent shells so monorepo subfolder `git` cwd still uses workspace grants
+- Credential helper **walks parent dirs** under `/workspace` when env is unset
+- Push guard resolves **bare `git push` / `git push origin`** via `git remote get-url` before policy check
+- Docs + `get_policy` describe project key sources and `list_accounts`
+
 ## 0.1.3 — 2026-08-18
 
 ### Added

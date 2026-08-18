@@ -85,16 +85,24 @@ Under `$DSH_HOME/git-forge/`:
 ## Model tool
 
 ```text
+GitForge action=list_accounts
 GitForge action=get_policy
 GitForge action=list_project_accounts
 GitForge action=check_remote url=git@github.com:org/repo.git
 ```
 
+### Agent HTTPS and project path
+
+- Grant key = **DSH session workspace** (`DSH_GIT_FORGE_PROJECT` in agent shells), not nested package path  
+- Helper resolution: `env` → exact cwd → walk parents under `/workspace`  
+- R1: auto-fill only with exactly **one** granted **token** account for that host  
+- Push guard checks inline URLs **and** bare `git push` / `git push origin` (resolves remote URL)
+
 ## Security
 
 - Tokens never appear in tool/API results or model context  
 - Push policy is enforced in Host `tools.guard`  
-- With **no** project grants, push is **not** blocked by default (progressive enablement)
+- With **no** project grants, push is **not** blocked by default (progressive enablement); helper also supplies no credentials
 
 ## Development
 

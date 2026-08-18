@@ -4,7 +4,7 @@
  * Run: node scripts/smoke-test.mjs
  */
 import assert from 'node:assert/strict'
-import { normalizeProjectKey } from '../lib/shared/path.js'
+import { normalizeProjectKey, resolveGrantsProjectKey } from '../lib/shared/path.js'
 import {
   publicAccount,
   modelAccountSummary,
@@ -19,7 +19,11 @@ import {
   evaluatePushPolicy,
 } from '../lib/shared/git-policy.js'
 import { selectTokenAccountForHost } from '../lib/shared/credential-select.js'
-import { parseCredentialInput } from './git-credential-dsh-git-forge.mjs'
+import { guessPushRemoteName } from '../lib/shared/remote-resolve.js'
+import {
+  parseCredentialInput,
+  resolveHelperProjectKey,
+} from './git-credential-dsh-git-forge.mjs'
 
 let failed = 0
 function test(name, fn) {
@@ -53,6 +57,16 @@ test('classifyGitWriteCommand', () => {
   assert.equal(classifyGitWriteCommand('git status').kind, 'none')
   assert.equal(classifyGitWriteCommand('git push origin main').kind, 'push')
   assert.equal(classifyGitWriteCommand('git remote set-url origin https://github.com/a/b.git').kind, 'remote_write')
+  // commit message must not look like a push
+  assert.equal(
+    classifyGitWriteCommand('git commit -m "fix: bare git push guard"').kind,
+    'none',
+  )
+  // path dsh-git-forge + URL must not be push without git push subcommand
+  assert.equal(
+    classifyGitWriteCommand('node -e "fetch(\'http://127.0.0.1:3080/dsh-git-forge/api/health\')"').kind,
+    'none',
+  )
 })
 
 test('evaluatePushPolicy blocks wrong host when granted', () => {
@@ -182,6 +196,34 @@ test('parseCredentialInput', () => {
   assert.equal(o.protocol, 'https')
   assert.equal(o.host, 'github.com')
   assert.equal(o.path, 'org/repo.git')
+})
+
+test('resolveGrantsProjectKey walks monorepo child to workspace grant', () => {
+  const projects = {
+    '/workspace/DSH-plugin': { accountIds: ['a1'] },
+  }
+  const r = resolveGrantsProjectKey('/workspace/DSH-plugin/dsh-git-forge', projects)
+  assert.equal(r.key, '/workspace/DSH-plugin')
+  assert.equal(r.source, 'walk')
+  const exact = resolveGrantsProjectKey('/workspace/DSH-plugin', projects)
+  assert.equal(exact.source, 'cwd')
+})
+
+test('resolveHelperProjectKey prefers env over cwd walk', () => {
+  const projects = { '/workspace/DSH-plugin': { accountIds: ['a1'] } }
+  const r = resolveHelperProjectKey({
+    envProject: '/workspace/DSH-plugin',
+    cwd: '/workspace/other/pkg',
+    projects,
+  })
+  assert.equal(r.source, 'env')
+  assert.equal(r.key, '/workspace/DSH-plugin')
+})
+
+test('guessPushRemoteName', () => {
+  assert.equal(guessPushRemoteName('git push'), 'origin')
+  assert.equal(guessPushRemoteName('git push origin main'), 'origin')
+  assert.equal(guessPushRemoteName('git push --force-with-lease upstream HEAD'), 'upstream')
 })
 
 if (failed) {

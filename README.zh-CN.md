@@ -82,10 +82,18 @@ dsh plugin --profile web add "dsh-git-forge@link:/path/to/dsh-git-forge"
 ## 模型工具
 
 ```text
+GitForge action=list_accounts
 GitForge action=get_policy
 GitForge action=list_project_accounts
 GitForge action=check_remote url=git@github.com:org/repo.git
 ```
+
+### Agent HTTPS 与项目路径
+
+- 授权 key = **DSH 会话工作区**（shell 注入 `DSH_GIT_FORGE_PROJECT`），不是子仓路径  
+- helper：`env` → cwd 精确匹配 → `/workspace` 下向父目录 walk  
+- R1：同 host 仅当恰好 **1** 个已授权 **token** 账号时自动注入  
+- push guard：命令中的 URL **以及** 裸 `git push`/`git push origin`（解析 remote）
 
 ## 安全
 
