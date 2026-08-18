@@ -21,6 +21,8 @@ cp -a "$ROOT/package.json" "$ROOT/cordis.patch.yml" "$ROOT/LICENSE" \
 cp -a "$ROOT/lib/." "$DEST/lib/"
 cp -a "$ROOT/scripts/." "$DEST/scripts/"
 chmod +x "$DEST/scripts/"*.sh "$DEST/scripts/"*.mjs 2>/dev/null || true
+chmod +x "$DEST/scripts/git-credential-dsh-git-forge.mjs" 2>/dev/null || true
 echo "synced -> $DEST"
 node --check "$DEST/lib/index.js"
+node --check "$DEST/lib/shared/credential-select.js"
 node "$DEST/scripts/smoke-test.mjs"

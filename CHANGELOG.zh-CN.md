@@ -2,6 +2,13 @@
 
 [English](./CHANGELOG.md) | [简体中文](./CHANGELOG.zh-CN.md)
 
+## 0.1.3 — 2026-08-18
+
+### 新增
+- **Agent HTTPS git 认证**：Host 侧 credential helper + `$DSH_HOME/git-forge/gitconfig`（`GIT_CONFIG_GLOBAL`），agent bash 中的 `git` 可透明使用侧栏已授权账号
+- **R1 选号**：同一 host 仅当恰好 1 个已授权 token 账号时自动注入；token 永不进模型上下文
+- health：`gitCredentialHelper` / `gitconfigPath` / `gitConfigGlobalActive`
+
 ## 0.1.2 — 2026-08-18
 
 ### 修复

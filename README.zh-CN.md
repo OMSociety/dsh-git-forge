@@ -9,9 +9,10 @@ DeepSeek Harness **社区插件**：在 [dsh-better-sidebar](https://github.com/
 - **push 拦截**：已授权项目下，bash 的 `git push` / `git remote add|set-url` 指向未授权 host 会被拒绝  
 - Token 存 `$DSH_HOME/git-forge/secrets.json`（`0600`），**不进模型上下文**  
 - 模型工具 **`GitForge`**（只读策略）  
+- **Agent HTTPS git**：侧栏授权后，agent bash 中的 `git fetch`/`push` 等可通过 Host credential helper 使用对应账号（**token 永不进模型**；同 host 多 token 账号时需只保留一个授权 = R1）  
 - UI 对齐 [dsh-ssh-tunnel](https://github.com/thirsty5034/dsh-ssh-tunnel)
 
-> 本插件**不替代**系统 `gh auth` / SSH；真实 git 认证仍走本机凭据。插件负责「这个项目允许推到哪」。
+> SSH 远程与系统 `gh auth` 仍走本机 SSH/`gh`。HTTPS 在 **DSH agent shell** 下由本插件 helper 按项目授权注入；插件同时负责「这个项目允许推到哪」（push guard）。
 
 ## 环境要求
 
@@ -90,7 +91,8 @@ GitForge action=check_remote url=git@github.com:org/repo.git
 
 - API / 工具结果不得包含 token  
 - push 策略在 Host `tools.guard` 中硬拦截  
-- 未给项目配置任何授权时，默认 **不拦截**（便于渐进启用）
+- Agent HTTPS：credential helper 仅在 Host 内读 `secrets.json`；同 host 多 token 账号时不自动选号（R1）  
+- 未给项目配置任何授权时，push guard 默认 **不拦截**（便于渐进启用）；helper 也不会凭空给凭据
 
 ## 开发
 

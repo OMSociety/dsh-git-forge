@@ -18,6 +18,8 @@ import {
   classifyGitWriteCommand,
   evaluatePushPolicy,
 } from '../lib/shared/git-policy.js'
+import { selectTokenAccountForHost } from '../lib/shared/credential-select.js'
+import { parseCredentialInput } from './git-credential-dsh-git-forge.mjs'
 
 let failed = 0
 function test(name, fn) {
@@ -137,6 +139,49 @@ test('normalizeApiBase gitea appends /api/v1', () => {
     normalizeApiBase('gitea', 'https://gitea.mi.pp00.top/api/v1'),
     'https://gitea.mi.pp00.top/api/v1',
   )
+})
+
+test('R1 selects single token account', () => {
+  const r = selectTokenAccountForHost({
+    projectPathKey: '/workspace/app',
+    host: 'github.com',
+    grants: { accountIds: ['a1'] },
+    accounts: [{ id: 'a1', gitHost: 'github.com', authMethod: 'token', username: 'u' }],
+  })
+  assert.equal(r.ok, true)
+  assert.equal(r.account.id, 'a1')
+})
+
+test('R1 rejects ambiguous token accounts', () => {
+  const r = selectTokenAccountForHost({
+    projectPathKey: '/workspace/app',
+    host: 'GitHub.COM',
+    grants: { accountIds: ['a1', 'a2'] },
+    accounts: [
+      { id: 'a1', gitHost: 'github.com', authMethod: 'token', username: 'u1' },
+      { id: 'a2', gitHost: 'github.com', authMethod: 'token', username: 'u2' },
+    ],
+  })
+  assert.equal(r.ok, false)
+  assert.equal(r.code, 'ambiguous')
+})
+
+test('R1 ssh_only when no token account', () => {
+  const r = selectTokenAccountForHost({
+    projectPathKey: '/workspace/app',
+    host: 'github.com',
+    grants: { accountIds: ['s1'] },
+    accounts: [{ id: 's1', gitHost: 'github.com', authMethod: 'ssh', username: 'git' }],
+  })
+  assert.equal(r.ok, false)
+  assert.equal(r.code, 'ssh_only')
+})
+
+test('parseCredentialInput', () => {
+  const o = parseCredentialInput('protocol=https\nhost=github.com\npath=org/repo.git\n\n')
+  assert.equal(o.protocol, 'https')
+  assert.equal(o.host, 'github.com')
+  assert.equal(o.path, 'org/repo.git')
 })
 
 if (failed) {

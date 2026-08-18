@@ -9,9 +9,10 @@ DeepSeek Harness community plugin: **forge accounts + per-project grants + push 
 - **Push guard**: blocks bash `git push` / `git remote add|set-url` to non-granted hosts  
 - Tokens in `$DSH_HOME/git-forge/secrets.json` (`0600`) — **never in model context**  
 - Model tool **`GitForge`** (read-only policy)  
+- **Agent HTTPS git:** after sidebar grants, agent bash `git fetch`/`push` can use the matching account via a Host-only credential helper (**tokens never enter the model**; R1 = exactly one granted token account per host)  
 - UI aligned with [dsh-ssh-tunnel](https://github.com/thirsty5034/dsh-ssh-tunnel)
 
-Does **not** replace system `gh auth` / SSH. The plugin decides *where a project may push*.
+SSH remotes and system `gh auth` still use local SSH/`gh`. HTTPS under **DSH agent shells** is filled by this plugin’s helper from project grants; the push guard still decides *where a project may push*.
 
 ## Requirements
 
