@@ -2,6 +2,12 @@
 
 [English](./CHANGELOG.md) | [简体中文](./CHANGELOG.zh-CN.md)
 
+## 0.1.2 — 2026-08-18
+
+### 修复
+- **GitForge 作为全局模型工具正确注册**（不再依赖 out-of-tree 解析 `@deepseek-ai/dsh-tools` 的 `defineTool`；改用与 modlens / dsh-ssh-tunnel 相同的裸 JSON Schema + 必填 `output`）。此前标准对话工具列表中看不到该工具。
+- `health.version` 与 `package.json` 对齐；`health.gitForgeRegistered` 报告注册状态
+
 ## 0.1.1
 
 ### 社区发布形态

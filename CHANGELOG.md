@@ -2,6 +2,12 @@
 
 [English](./CHANGELOG.md) | [简体中文](./CHANGELOG.zh-CN.md)
 
+## 0.1.2 — 2026-08-18
+
+### Fixed
+- **GitForge registers as a global model tool** without importing `@deepseek-ai/dsh-tools` (raw JSON-Schema definition + required `output`, same pattern as modlens / dsh-ssh-tunnel). Out-of-tree `defineTool` resolution left the tool missing from standard chat catalogs.
+- `health.version` tracks `package.json`; `health.gitForgeRegistered` reports registration status
+
 ## 0.1.1
 
 ### Community packaging
