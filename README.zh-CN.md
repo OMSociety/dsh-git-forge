@@ -54,6 +54,14 @@ dsh plugin --profile web add "dsh-git-forge@link:/path/to/dsh-git-forge"
 
 </details>
 
+
+## 可发现性
+
+- GitHub topics：`dsh-plugin`、`deepseek-harness`、`dsh`（[dsh.so](https://www.dsh.so/) 自动收录所需）
+- 当前请从 GitHub 安装：见上文 **安装**
+- 商店目录可能滞后于爬虫；以本仓库为准
+
+
 ## 数据目录
 
 `$DSH_HOME/git-forge/`（建议 `0700`）：

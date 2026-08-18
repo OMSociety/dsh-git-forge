@@ -18,12 +18,14 @@
   },
   "keywords": [
     "dsh",
+    "dsh-plugin",
     "deepseek-harness",
     "git",
     "github",
     "gitea",
     "cordis",
-    "better-sidebar"
+    "better-sidebar",
+    "dsh-better-sidebar"
   ],
   "engines": {
     "node": ">=18"

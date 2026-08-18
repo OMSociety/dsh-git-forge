@@ -57,6 +57,14 @@ dsh plugin --profile web add "dsh-git-forge@link:/path/to/dsh-git-forge"
 
 </details>
 
+
+## Discoverability
+
+- GitHub topics: `dsh-plugin`, `deepseek-harness`, `dsh` (required for [dsh.so](https://www.dsh.so/) auto-index)
+- Install from GitHub (current): see **Install** above
+- Store listings may lag crawlers; source of truth is this repository
+
+
 ## Data
 
 Under `$DSH_HOME/git-forge/`:
