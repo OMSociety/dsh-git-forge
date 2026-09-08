@@ -2,6 +2,11 @@
 
 [English](./CHANGELOG.md) | [简体中文](./CHANGELOG.zh-CN.md)
 
+## 0.1.5 — 2026-09-08
+
+### Fixed
+- Remove **`@deepseek-ai/dsh-client-runtime`** from `dsh.client.inject`. The package was deleted in DSH 0.1.2 (community upgrade card `DSH-0.1.2-A1-25`); keeping the phantom in `inject` left the client assembly row pending / out of the boot graph on 0.1.2 hosts. `@deepseek-ai/dsh-client-locale` is retained (provides `ctx.locale`). First tagged release — also covers the 0.1.4-era features (R1 Host credential helper, GitForge model-tool registration, monorepo project key).
+
 ## 0.1.4 — 2026-08-18
 
 ### Fixed

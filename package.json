@@ -1,6 +1,6 @@
 {
   "name": "dsh-git-forge",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "GitHub/Gitea (and other forge) accounts with project-scoped grants and push policy for DeepSeek Harness better-sidebar",
   "type": "module",
   "license": "MIT",
