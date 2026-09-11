@@ -2,6 +2,11 @@
 
 [English](./CHANGELOG.md) | [简体中文](./CHANGELOG.zh-CN.md)
 
+## 0.1.6 — 2026-09-11
+
+### Fixed
+- **Agent HTTPS git no longer hangs on Git for Windows, and the credential helper now actually runs.** Git for Windows registers a GUI `credential.helper = helper-selector` in its system gitconfig, and helpers accumulate across config scopes, so the selector ran **before** this plugin’s helper and blocked forever on a dialog that a headless agent shell can never answer. On top of that, the `!<cmd>` helper line in the generated gitconfig had its inner quotes swallowed by the gitconfig parser: `!"C:\Program Files\nodejs\node.exe" "…"` survived parsing as the *unquoted* `C:\Program Files\nodejs\node.exe`, so the shell split it and git reported `line 1: C:Program: command not found` — the helper never ran at all. `ensureHelperGitconfig()` now writes an empty `helper =` line — which clears every `credential.helper` accumulated so far, dropping the system-level selector — before the plugin helper, and escapes the helper command’s inner quotes as `\"`; the earlier `GIT_CONFIG_COUNT` / `GIT_CONFIG_KEY_n` / `GIT_CONFIG_VALUE_n` injection was removed because those keys never reached agent shells, leaving a `GIT_CONFIG_COUNT` with no matching keys and making every git command fail with `fatal: unable to parse command-line config`. The fix is confined to the generated gitconfig (`$DSH_HOME/git-forge/gitconfig`).
+
 ## 0.1.5 — 2026-09-08
 
 ### Fixed
