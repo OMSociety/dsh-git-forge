@@ -1,18 +1,24 @@
 {
   "name": "dsh-git-forge",
-  "version": "0.1.5",
+  "version": "1.0.0",
   "description": "GitHub/Gitea (and other forge) accounts with project-scoped grants and push policy for DeepSeek Harness better-sidebar",
   "type": "module",
   "license": "MIT",
   "author": "thirsty5034",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/thirsty5034/dsh-git-forge.git"
+    "url": "git+https://github.com/OMSociety/dsh-git-forge.git"
   },
-  "homepage": "https://github.com/thirsty5034/dsh-git-forge#readme",
+  "homepage": "https://github.com/OMSociety/dsh-git-forge#readme",
   "bugs": {
-    "url": "https://github.com/thirsty5034/dsh-git-forge/issues"
+    "url": "https://github.com/OMSociety/dsh-git-forge/issues"
   },
+  "contributors": [
+    {
+      "name": "OMSociety",
+      "url": "https://github.com/OMSociety"
+    }
+  ],
   "publishConfig": {
     "access": "public"
   },
