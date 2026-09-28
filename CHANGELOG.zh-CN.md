@@ -10,6 +10,7 @@
 ### 修复
 - **路径包含判断在 Windows 上恢复正常。** `isPathInsideRoots` 用 `root + '/'` 拼前缀且大小写敏感地比较，而 `normalizeProjectKey` 返回平台原生形态的键——于是 Windows 上所有包含判断全部失败，连 `C:\ws\child` 在 `C:\ws` 内也判为否。现在包含判断在「统一分隔符、Win32 折叠大小写」的比较形态上进行；存储的键保持平台原生形态不变。`normalizeProjectKey` 也会在不破坏 `C:\` 盘符根的前提下剥掉结尾反斜杠。
 - **自检用例可移植。** `normalizeProjectKey` / `resolveGrantsProjectKey` / `resolveHelperProjectKey` 三处夹具硬编码 POSIX 路径，导致 `node scripts/smoke-test.mjs` 在任何 Windows 检出上固定挂 3 个用例。夹具现在经 `normalizeProjectKey` 推导期望值，并新增分隔符处理的回归用例。
+- **Git for Windows 下 agent 的 HTTPS git 不再永久卡死，且凭据 helper 现在真正会执行**。Git for Windows 在系统级 gitconfig 注册了 GUI 程序 `credential.helper = helper-selector`，而各配置层的 helper 是**叠加**的，于是它会排在本插件 helper **前面**被执行，在无头 agent shell 里弹出无人可答的对话框、永久阻塞。除此之外，生成的 gitconfig 里 `!<cmd>` helper 行的内层引号会被 gitconfig 解析器吞掉：`!"C:\Program Files\nodejs\node.exe" "…"` 解析后只剩下*未加引号*的 `C:\Program Files\nodejs\node.exe`，shell 于是在空格处切分，git 报 `line 1: C:Program: command not found`——helper 根本没有执行过。`ensureHelperGitconfig()` 现在会在插件 helper 之前写入一行空的 `helper =`（清空此前累积的所有 `credential.helper`，从而丢弃系统级 selector），并把 helper 命令的内层引号转义为 `\"`；此前那套 `GIT_CONFIG_COUNT` / `GIT_CONFIG_KEY_n` / `GIT_CONFIG_VALUE_n` 注入已移除，因为那些键根本到不了 agent shell，只剩下一个没有对应键的 `GIT_CONFIG_COUNT`，使每一条 git 命令都以 `fatal: unable to parse command-line config` 失败。修复仅限生成的 gitconfig（`$DSH_HOME/git-forge/gitconfig`）。
 
 ## 0.1.5 — 2026-09-08
 
