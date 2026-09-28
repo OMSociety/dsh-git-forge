@@ -52,6 +52,12 @@ test('isPathInsideRoots handles platform separators', () => {
   assert.equal(isPathInsideRoots(outside, [root]), false)
 })
 
+test('isPathInsideRoots accepts children of filesystem roots', () => {
+  const root = normalizeProjectKey('/')
+  assert.equal(isPathInsideRoots(normalizeProjectKey('/etc/passwd'), [root]), true)
+  assert.equal(isPathInsideRoots(root, [root]), true)
+})
+
 test('hostFromGitUrl scp and https', () => {
   assert.equal(hostFromGitUrl('git@github.com:org/repo.git'), 'github.com')
   assert.equal(hostFromGitUrl('https://gitea.example.com/org/repo.git'), 'gitea.example.com')
