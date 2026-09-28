@@ -4,7 +4,7 @@
  * Run: node scripts/smoke-test.mjs
  */
 import assert from 'node:assert/strict'
-import { normalizeProjectKey, resolveGrantsProjectKey } from '../lib/shared/path.js'
+import { normalizeProjectKey, isPathInsideRoots, resolveGrantsProjectKey } from '../lib/shared/path.js'
 import {
   publicAccount,
   modelAccountSummary,
@@ -37,7 +37,19 @@ function test(name, fn) {
 }
 
 test('normalizeProjectKey', () => {
-  assert.equal(normalizeProjectKey('/workspace/DSH-plugin/'), '/workspace/DSH-plugin')
+  const key = normalizeProjectKey('/workspace/DSH-plugin/')
+  assert.equal(key, normalizeProjectKey('/workspace/DSH-plugin'))
+  assert.ok(!key.endsWith('/') && !key.endsWith('\\'), 'no trailing separator')
+  assert.equal(normalizeProjectKey(''), '')
+})
+
+test('isPathInsideRoots handles platform separators', () => {
+  const root = normalizeProjectKey('/workspace/DSH-plugin')
+  const child = normalizeProjectKey('/workspace/DSH-plugin/sub/file.txt')
+  const outside = normalizeProjectKey('/workspace/other')
+  assert.equal(isPathInsideRoots(child, [root]), true)
+  assert.equal(isPathInsideRoots(root, [root]), true)
+  assert.equal(isPathInsideRoots(outside, [root]), false)
 })
 
 test('hostFromGitUrl scp and https', () => {
@@ -199,25 +211,29 @@ test('parseCredentialInput', () => {
 })
 
 test('resolveGrantsProjectKey walks monorepo child to workspace grant', () => {
+  const wsKey = normalizeProjectKey('/workspace/DSH-plugin')
+  const child = normalizeProjectKey('/workspace/DSH-plugin/dsh-git-forge')
   const projects = {
-    '/workspace/DSH-plugin': { accountIds: ['a1'] },
+    [wsKey]: { accountIds: ['a1'] },
   }
-  const r = resolveGrantsProjectKey('/workspace/DSH-plugin/dsh-git-forge', projects)
-  assert.equal(r.key, '/workspace/DSH-plugin')
+  const r = resolveGrantsProjectKey(child, projects)
+  assert.equal(r.key, wsKey)
   assert.equal(r.source, 'walk')
-  const exact = resolveGrantsProjectKey('/workspace/DSH-plugin', projects)
+  const exact = resolveGrantsProjectKey(wsKey, projects)
   assert.equal(exact.source, 'cwd')
 })
 
 test('resolveHelperProjectKey prefers env over cwd walk', () => {
-  const projects = { '/workspace/DSH-plugin': { accountIds: ['a1'] } }
+  const wsKey = normalizeProjectKey('/workspace/DSH-plugin')
+  const other = normalizeProjectKey('/workspace/other/pkg')
+  const projects = { [wsKey]: { accountIds: ['a1'] } }
   const r = resolveHelperProjectKey({
-    envProject: '/workspace/DSH-plugin',
-    cwd: '/workspace/other/pkg',
+    envProject: wsKey,
+    cwd: other,
     projects,
   })
   assert.equal(r.source, 'env')
-  assert.equal(r.key, '/workspace/DSH-plugin')
+  assert.equal(r.key, wsKey)
 })
 
 test('guessPushRemoteName', () => {

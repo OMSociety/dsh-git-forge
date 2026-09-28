@@ -2,6 +2,12 @@
 
 [English](./CHANGELOG.md) | [简体中文](./CHANGELOG.zh-CN.md)
 
+## 未发布
+
+### 修复
+- **路径包含判断在 Windows 上恢复正常。** `isPathInsideRoots` 用 `root + '/'` 拼前缀且大小写敏感地比较，而 `normalizeProjectKey` 返回平台原生形态的键——于是 Windows 上所有包含判断全部失败，连 `C:\ws\child` 在 `C:\ws` 内也判为否。现在包含判断在「统一分隔符、Win32 折叠大小写」的比较形态上进行；存储的键保持平台原生形态不变。`normalizeProjectKey` 也会在不破坏 `C:\` 盘符根的前提下剥掉结尾反斜杠。
+- **自检用例可移植。** `normalizeProjectKey` / `resolveGrantsProjectKey` / `resolveHelperProjectKey` 三处夹具硬编码 POSIX 路径，导致 `node scripts/smoke-test.mjs` 在任何 Windows 检出上固定挂 3 个用例。夹具现在经 `normalizeProjectKey` 推导期望值，并新增分隔符处理的回归用例。
+
 ## 0.1.5 — 2026-09-08
 
 ### 修复

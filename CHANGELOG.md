@@ -2,6 +2,12 @@
 
 [English](./CHANGELOG.md) | [简体中文](./CHANGELOG.zh-CN.md)
 
+## Unreleased
+
+### Fixed
+- **Path containment checks now work on Windows.** `isPathInsideRoots` built its prefix as `root + '/'` and compared case-sensitively, while `normalizeProjectKey` returns platform-native keys — so on Windows every containment check failed, even `C:\ws\child` inside `C:\ws`. Containment is now judged on a separator-unified comparison form (case-folded on Win32); stored keys keep their platform-native shape. `normalizeProjectKey` also strips a trailing backslash without breaking `C:\` drive roots.
+- **Smoke tests are platform-portable.** The `normalizeProjectKey` / `resolveGrantsProjectKey` / `resolveHelperProjectKey` fixtures hard-coded POSIX paths, so `node scripts/smoke-test.mjs` failed 3 tests on any Windows checkout. Fixtures now derive expectations through `normalizeProjectKey`, and a regression test covers separator handling.
+
 ## 0.1.5 — 2026-09-08
 
 ### Fixed
