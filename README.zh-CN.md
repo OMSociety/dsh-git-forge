@@ -2,7 +2,7 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-> **提示：**本 npm 包由 [OMSociety fork](https://github.com/OMSociety/dsh-git-forge) 发布；上游项目为 [thirsty5034/dsh-git-forge](https://github.com/thirsty5034/dsh-git-forge)，也是本代码的作者（MIT，见 [LICENSE](./LICENSE)）。本版本加入更新日志所记的 Windows 路径包含修复与 DSH 兼容声明。修复与问题反馈都走该 fork。安装：`dsh plugin --profile web add dsh-git-forge`。
+> **提示：**本仓库是 `dsh-git-forge` 的维护主线，在 [OMSociety 仓库](https://github.com/OMSociety/dsh-git-forge) 独立延续（已于 2026-09-28 脱离 fork 网络）；上游项目为 [thirsty5034/dsh-git-forge](https://github.com/thirsty5034/dsh-git-forge)，也是本代码的作者（MIT，见 [LICENSE](./LICENSE)）。1.0.0 加入更新日志所记的 Windows 路径包含修复与 DSH 兼容声明。修复与问题反馈都在本仓库处理。
 
 DeepSeek Harness **社区插件**：在 [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) 中提供 **Forge 账号库 + 按项目授权 + push 策略**。
 
