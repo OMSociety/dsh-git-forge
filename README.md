@@ -2,7 +2,7 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-> **Note:** This npm package is published from the [OMSociety fork](https://github.com/OMSociety/dsh-git-forge); [thirsty5034/dsh-git-forge](https://github.com/thirsty5034/dsh-git-forge) is the upstream project and the author of this code (MIT, see [LICENSE](./LICENSE)). This release adds the Windows path-containment fix and the DSH compatibility declarations recorded in the changelog. Install: `dsh plugin --profile web add dsh-git-forge`.
+> **Note:** This npm package is published from the [OMSociety fork](https://github.com/OMSociety/dsh-git-forge); [thirsty5034/dsh-git-forge](https://github.com/thirsty5034/dsh-git-forge) is the upstream project and the author of this code (MIT, see [LICENSE](./LICENSE)). This release adds the Windows path-containment fix and the DSH compatibility declarations recorded in the changelog. Fixes and issue reports are handled in the fork. Install: `dsh plugin --profile web add dsh-git-forge`.
 
 DeepSeek Harness community plugin: **forge accounts + per-project grants + push policy** in [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar).
 
