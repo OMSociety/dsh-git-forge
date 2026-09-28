@@ -4,6 +4,9 @@
 
 ## Unreleased
 
+### Changed
+- **Declare DSH compatibility metadata.** `package.json` now carries `dsh.manifestVersion: 1`, `engines.dsh: ">=0.1.2-rc.1 <0.2.0"` (the author-declared compatible DSH range, sitting beside `engines.node`, which is raised to `>=20` like current ecosystem plugins), and a `@deepseek-ai/dsh-client-locale` peer over the same range. Since DSH 0.1.7-rc.1 the plugin gate compares `@deepseek-ai/dsh` / `@deepseek-ai/dsh-*` peer ranges against the running runtime (missing peers impose no constraint) — without a DSH peer this plugin passed every host silently. `dsh.manifestVersion` and `engines.dsh` stay declarative, as the manifest spec defines them.
+
 ### Fixed
 - **Path containment checks now work on Windows.** `isPathInsideRoots` built its prefix as `root + '/'` and compared case-sensitively, while `normalizeProjectKey` returns platform-native keys — so on Windows every containment check failed, even `C:\ws\child` inside `C:\ws`. Containment is now judged on a separator-unified comparison form (case-folded on Win32); stored keys keep their platform-native shape. `normalizeProjectKey` also strips a trailing backslash without breaking `C:\` drive roots.
 - **Smoke tests are platform-portable.** The `normalizeProjectKey` / `resolveGrantsProjectKey` / `resolveHelperProjectKey` fixtures hard-coded POSIX paths, so `node scripts/smoke-test.mjs` failed 3 tests on any Windows checkout. Fixtures now derive expectations through `normalizeProjectKey`, and a regression test covers separator handling.

@@ -4,6 +4,9 @@
 
 ## 未发布
 
+### 变更
+- **声明 DSH 兼容性元数据。** `package.json` 现携带 `dsh.manifestVersion: 1`、`engines.dsh: ">=0.1.2-rc.1 <0.2.0"`（作者声明的兼容 DSH 范围，与 `engines.node` 并列；后者随当前生态主流提到 `>=20`），以及覆盖同一范围的 `@deepseek-ai/dsh-client-locale` peer。自 DSH 0.1.7-rc.1 起，插件闸门会把 `@deepseek-ai/dsh` / `@deepseek-ai/dsh-*` 的 peer 范围与运行时版本比对（未声明 DSH peer 则不施加约束）——此前本插件没有任何 DSH peer，在任何宿主上都被静默放行。`dsh.manifestVersion` 与 `engines.dsh` 按清单规范仍只是声明字段。
+
 ### 修复
 - **路径包含判断在 Windows 上恢复正常。** `isPathInsideRoots` 用 `root + '/'` 拼前缀且大小写敏感地比较，而 `normalizeProjectKey` 返回平台原生形态的键——于是 Windows 上所有包含判断全部失败，连 `C:\ws\child` 在 `C:\ws` 内也判为否。现在包含判断在「统一分隔符、Win32 折叠大小写」的比较形态上进行；存储的键保持平台原生形态不变。`normalizeProjectKey` 也会在不破坏 `C:\` 盘符根的前提下剥掉结尾反斜杠。
 - **自检用例可移植。** `normalizeProjectKey` / `resolveGrantsProjectKey` / `resolveHelperProjectKey` 三处夹具硬编码 POSIX 路径，导致 `node scripts/smoke-test.mjs` 在任何 Windows 检出上固定挂 3 个用例。夹具现在经 `normalizeProjectKey` 推导期望值，并新增分隔符处理的回归用例。
