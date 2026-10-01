@@ -14,8 +14,6 @@
   </p>
 </div>
 
-> **Note:** This is the maintained line of `dsh-git-forge`, continued independently at the [OMSociety repository](https://github.com/OMSociety/dsh-git-forge) (standalone since 2026-09-28). The upstream project and the author of this code is [thirsty5034/dsh-git-forge](https://github.com/thirsty5034/dsh-git-forge) (MIT, see [LICENSE](LICENSE)). Fixes and issue reports are handled in this repository.
-
 ## What this is
 
 **dsh-git-forge** is a community plugin for [DeepSeek Harness](https://github.com/deepseek-ai/dsh). Inside the sidebar host [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) it gives you one place to manage a **forge account library, per-project grants and push policy**.

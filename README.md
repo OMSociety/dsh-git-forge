@@ -16,8 +16,6 @@
 <a href="#这是什么">这是什么</a> • <a href="#核心特性">核心特性</a> • <a href="#快速开始">快速开始</a> • <a href="#侧栏">侧栏</a> • <a href="#模型工具">模型工具</a> • <a href="#数据放在哪">数据放在哪</a> • <a href="#安全">安全</a> • <a href="#开发">开发</a> • <a href="#许可证与作者">许可证与作者</a>
 </div>
 
-> **提示：**本仓库是 `dsh-git-forge` 的维护主线，在 [OMSociety 仓库](https://github.com/OMSociety/dsh-git-forge) 独立延续（2026-09-28 起脱离 fork 网络）。上游项目与代码作者是 [thirsty5034/dsh-git-forge](https://github.com/thirsty5034/dsh-git-forge)（MIT，见 [LICENSE](LICENSE)）。修复与问题反馈都在本仓库处理。
-
 ## 这是什么
 
 **dsh-git-forge** 是 [DeepSeek Harness](https://github.com/deepseek-ai/dsh) 的社区插件，在右侧栏宿主 [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) 里给你一个 **Forge 账号库 + 按项目授权 + 推送策略** 的管理面。
