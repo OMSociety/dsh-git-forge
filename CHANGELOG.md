@@ -10,6 +10,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-10-04
+
+### 新增
+
+- 插件有了自己的图标：包根 `icon.svg`（36×36，橙红渐变铁砧 + 白色分支负形），由 `package.json` 顶层 `icon` 字段声明并列入 `files`。插件列表里不再显示 DSH 的默认图形。
+- 侧边栏标签图标改用同一张图：`lib/client.js` 不再自画 24 画板的节点图标，改为内联渲染 `icon.svg` 的铁砧与分支（按 36 画板绘制，再放大 1.3 倍以贴合侧边栏的视觉重量）。插件列表与侧边栏因此是同一张标。
+- 插件列表里的显示名与描述有了中英两份（`locale/en.json`、`locale/zh.json` 的 `meta.title` 与 `meta.description`），中文名定为「Git 凭据管理」；`package.json` 的 `exports` 与 `files` 相应放行 `locale/*.json`。此前该处回退成包名与英文 `description`，在中文界面里中英混排。
+
+### Added
+
+- The plugin now ships its own icon: `icon.svg` at the package root (36×36, an orange-to-red gradient anvil with a white branch as negative space), declared through the top-level `icon` field in `package.json` and listed in `files`. The plugin list no longer falls back to the default DSH artwork.
+- The sidebar tab icon now renders the same artwork as `icon.svg` instead of a separate 24-unit node glyph: `lib/client.js` draws the anvil and branch on the 36-unit canvas and scales them 1.3× to match the sidebar's visual weight. The plugin list and the sidebar therefore carry one mark.
+- The plugin's display name and description in the plugin list now ship in both languages (`meta.title` and `meta.description` in `locale/en.json` and `locale/zh.json`), with the Chinese name settled as 「Git 凭据管理」; `exports` and `files` in `package.json` admit `locale/*.json` accordingly. The list previously fell back to the package name and the English `description`, mixing languages inside a Chinese interface.
+
 ## [1.0.0] - 2026-09-28
 
 ### 变更

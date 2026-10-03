@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git Credentials",
+    "description": "Per-project Git accounts and push policy: which account the agent uses, and which hosts it may push to."
+  }
+}

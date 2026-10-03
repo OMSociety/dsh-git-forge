@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git 凭据管理",
+    "description": "按项目授权 Git 账号与推送权限：决定 agent 用哪个账号、能推到哪些 host。"
+  }
+}
