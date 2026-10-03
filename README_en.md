@@ -1,6 +1,7 @@
 <p align="center"><a href="README.md">简体中文</a> | <strong>English</strong></p>
 
 <div align="center">
+  <img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/logo.png" alt="DSH Git Forge" width="160">
   <h1>DSH Git Forge</h1>
   <p>Git credentials and push policy for DeepSeek Harness: which project may use which account, and where it is allowed to push.</p>
   <p>Accounts and tokens stay host-side. <strong>Per-project grants</strong> decide which account an agent uses; the <strong>push guard</strong> decides where that project may push.</p>

@@ -1,6 +1,7 @@
 <p align="center"><strong>简体中文</strong> | <a href="README_en.md">English</a></p>
 
 <div align="center">
+  <img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/logo.png" alt="DSH Git Forge" width="160">
   <h1>DSH Git Forge</h1>
   <p>DeepSeek Harness 的 Git 凭据与推送权限管理器：哪个项目能用哪个账号、允许推到哪些 host，一处说清。</p>
   <p>账号库与 token 只落在宿主侧。<strong>按项目授权</strong>决定 agent 用哪个账号，<strong>push 拦截</strong>决定这个项目允许推到哪。</p>
