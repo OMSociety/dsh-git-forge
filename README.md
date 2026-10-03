@@ -72,7 +72,7 @@ irm https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/insta
 
 脚本默认走 GitHub 源（`bash scripts/install.sh --from npm 1.0.0` 可切到 npm），除安装外还会把 profile 的 `minimumReleaseAgeExclude` 补上本插件、校验 `dsh.profile.bundles` 确实写入、清掉旧版手写在 profile `cordis.patch.yml` 里的挂载（先加 `--dry-run` 可只看计划不动手）。
 
-> **提示：**装好后**刷新一下浏览器页面**，右侧栏才会出现「Git 凭据」入口——只重启宿主不够，客户端产物是页面加载时取的。
+> **提示**：装好后**刷新一下浏览器页面**，右侧栏才会出现「Git 凭据」入口——只重启宿主不够，客户端产物是页面加载时取的。
 
 **装完怎么用**
 
@@ -132,7 +132,7 @@ irm https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/insta
 - 右侧栏宿主 **dsh-better-sidebar** `>=0.12.0`
 - Node.js `>= 20`
 
-> **提示：**升级到 DSH 0.2.x 之前，先确认右侧栏宿主已发布覆盖 0.2 的版本。
+> **提示**：升级到 DSH 0.2.x 之前，先确认右侧栏宿主已发布覆盖 0.2 的版本。
 
 ## 开发
 

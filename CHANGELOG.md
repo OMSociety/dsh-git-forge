@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Agent HTTPS git auth** via Host-only git credential helper (`scripts/git-credential-dsh-git-forge.mjs`) and `$DSH_HOME/git-forge/gitconfig` (`GIT_CONFIG_GLOBAL` for agent shells)
-- **R1 account selection:** exactly one authorized token account per remote host; tokens never enter model context
+- **R1 account selection**: exactly one authorized token account per remote host; tokens never enter model context
 - Health: `gitCredentialHelper`, `gitconfigPath`, `gitConfigGlobalActive`
 
 ## [0.1.2] - 2026-08-18
