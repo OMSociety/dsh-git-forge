@@ -17,7 +17,7 @@
 
 ## What this is
 
-**dsh-git-forge** is a community plugin for [DeepSeek Harness](https://github.com/deepseek-ai/dsh). Inside the sidebar host [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) it gives you one place to manage a **forge account library, per-project grants and push policy**.
+**DSH Git Forge** is a community plugin for [DeepSeek Harness](https://github.com/deepseek-ai/dsh). Inside the sidebar host [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) it gives you one place to manage a **forge account library, per-project grants and push policy**.
 
 It governs two things:
 

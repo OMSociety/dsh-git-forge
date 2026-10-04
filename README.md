@@ -19,7 +19,7 @@
 
 ## 这是什么
 
-**dsh-git-forge** 是 [DeepSeek Harness](https://github.com/deepseek-ai/dsh) 的社区插件，在右侧栏宿主 [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) 里给你一个 **Forge 账号库 + 按项目授权 + 推送策略** 的管理面。
+**DSH Git Forge** 是 [DeepSeek Harness](https://github.com/deepseek-ai/dsh) 的社区插件，在右侧栏宿主 [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) 里给你一个 **Forge 账号库 + 按项目授权 + 推送策略** 的管理面。
 
 它管两件事：
 
