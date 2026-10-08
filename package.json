@@ -73,6 +73,7 @@
     "lib",
     "scripts/install.sh",
     "scripts/install.ps1",
+    "scripts/lib/*.cjs",
     "scripts/git-credential-dsh-git-forge.mjs",
     "scripts/smoke-test.mjs",
     "scripts/sync-to-dsh.sh",
