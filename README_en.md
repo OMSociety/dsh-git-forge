@@ -8,7 +8,7 @@
 
   <p>
     <a href="https://github.com/OMSociety/dsh-git-forge/releases"><img src="https://img.shields.io/github/v/tag/OMSociety/dsh-git-forge?label=version&color=4f6ef7" alt="Version"></a>
-    <a href="https://github.com/deepseek-ai/dsh"><img src="https://img.shields.io/badge/DSH-%3E%3D0.1.7--rc.2_%3C0.3.0--0-4f6ef7" alt="DSH"></a>
+    <a href="https://github.com/deepseek-ai/dsh"><img src="https://img.shields.io/badge/DSH-%3E%3D0.2.0--rc.2_%3C0.3.0--0-4f6ef7" alt="DSH"></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/OMSociety/dsh-git-forge?color=4f6ef7" alt="License"></a>
     <a href="https://github.com/OMSociety/dsh-git-forge/stargazers"><img src="https://img.shields.io/github/stars/OMSociety/dsh-git-forge?color=4f6ef7" alt="Stars"></a>
     <a href="https://github.com/OMSociety/dsh-git-forge/issues"><img src="https://img.shields.io/github/issues/OMSociety/dsh-git-forge?color=4f6ef7" alt="Issues"></a>
@@ -17,7 +17,7 @@
 
 ## What this is
 
-**DSH Git Forge** is a community plugin for [DeepSeek Harness](https://github.com/deepseek-ai/dsh). Inside the sidebar host [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) it gives you one place to manage a **forge account library, per-project grants and push policy**.
+**DSH Git Forge** is a community plugin for [DeepSeek Harness](https://github.com/deepseek-ai/dsh). In the DSH right sidebar it gives you one place to manage a **forge account library, per-project grants and push policy**.
 
 It governs two things:
 
@@ -44,11 +44,11 @@ SSH remotes and the system `gh auth` are untouched and keep using your local SSH
 
 ```powershell
 # 1) stop dsh web first (a running server holds the dependency lock; start it again afterwards)
-dsh plugin --profile web add "dsh-git-forge@1.0.1"
+dsh plugin --profile web add "dsh-git-forge@1.1.0"
 # 2) restart dsh web
 ```
 
-The package is published to npm and ships the prebuilt artifacts, so no local build step is involved. Replace `@1.0.1` to install another version.
+The package is published to npm and ships the prebuilt artifacts, so no local build step is involved. Replace `@1.1.0` to install another version.
 
 **Option 2: install from the GitHub source**
 
@@ -68,9 +68,9 @@ curl -fsSL https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/script
 irm https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/install.ps1 | iex
 ```
 
-The script installs from the GitHub source by default (`bash scripts/install.sh --from npm 1.0.1` switches to npm). Besides installing, it adds this plugin to the profile's `minimumReleaseAgeExclude`, verifies that `dsh.profile.bundles` really received the entry, and removes the mount older versions wrote by hand into the profile's `cordis.patch.yml`. Add `--dry-run` to print the plan without touching anything.
+The script installs from the GitHub source by default (`bash scripts/install.sh --from npm 1.1.0` switches to npm). Besides installing, it adds this plugin to the profile's `minimumReleaseAgeExclude`, verifies that `dsh.profile.bundles` really received the entry, and removes the mount older versions wrote by hand into the profile's `cordis.patch.yml`. Add `--dry-run` to print the plan without touching anything.
 
-> **Note**: After installing, **refresh the browser page** for the "Git Forge" entry to appear in the sidebar — restarting the host alone is not enough, because the client artifact is fetched when the page loads.
+> **Note**: After installing, **refresh the browser page**; the "Git Credentials" tab is opened from the right sidebar's guide page — restarting the host alone is not enough, because the client artifact is fetched when the page loads.
 
 **First run**
 
@@ -126,11 +126,8 @@ Under `$DSH_HOME/git-forge/` (directory mode `0700`):
 
 ## Requirements
 
-- A DSH web profile with DSH `>=0.1.7-rc.2 <0.3.0-0`
-- Sidebar host **dsh-better-sidebar** `>=0.12.0`
+- A DSH web profile with DSH `>=0.2.0-rc.2 <0.3.0-0`
 - Node.js `>= 20`
-
-> **Note**: Before upgrading to DSH 0.2.x, confirm the sidebar host has published a version covering 0.2.
 
 ## Development
 
@@ -155,7 +152,6 @@ cordis.patch.yml        In-package bundle patch the CLI turns into dsh.profile.b
 
 - If this plugin helps you, a Star is welcome; questions and suggestions go to [Issues](https://github.com/OMSociety/dsh-git-forge/issues) or [Pull Requests](https://github.com/OMSociety/dsh-git-forge/pulls).
 - Changes are recorded in the [CHANGELOG](CHANGELOG.md).
-- [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar): the sidebar host and tab contract
 - [dsh-ssh-tunnel](https://github.com/OMSociety/dsh-ssh-tunnel): sibling plugin sharing the same sidebar interaction model
 - [DeepSeek Harness](https://github.com/deepseek-ai/dsh): the host for plugins, tools and agent shells
 

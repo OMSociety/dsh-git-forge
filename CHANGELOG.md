@@ -10,6 +10,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-09
+
+### 变更
+
+- **面板挂到 DSH 官方右侧栏。** `lib/client.js` 的挂载从第三方侧栏宿主的 `registerTab` 换成官方 `sidebarRightTabs.register` 加 `sidebar.right.pane.tab` / `sidebar.right.pane.tab.title` 两个席位：座位正文与标题由框架注入 owner props（`sessionId`、`useTabInfo`），引导页入口带自己的说明文字（`guideDesc`，中英各一条）。`package.json` 移除 `dsh-better-sidebar` peer 与两个相关关键词，新增 `@deepseek-ai/dsh-client-ui-sidebar-right` peer。
+- **客户端不再向宿主端传 `cwd`。** `getProjectContext` 只带 `sessionId`，会话工作区由宿主从会话 header 解析；原先客户端拿侧栏宿主的 `scope.cwd` 当回退提示。
+- **DSH 版本下限抬到 `0.2.0-rc.2`。** `engines.dsh` 与 `@deepseek-ai/dsh-client-locale` peer 同步收窄为 `>=0.2.0-rc.2 <0.3.0-0`。
+
+### Changed
+
+- **The panel now mounts into the DSH right sidebar.** `lib/client.js` swaps the third-party sidebar host's `registerTab` for the official `sidebarRightTabs.register` plus the `sidebar.right.pane.tab` / `sidebar.right.pane.tab.title` seats: the framework injects the pane's owner props (`sessionId`, `useTabInfo`) and the guide-page entry carries its own description (`guideDesc`, one line per language). `package.json` drops the `dsh-better-sidebar` peer and its two keywords, and gains a `@deepseek-ai/dsh-client-ui-sidebar-right` peer.
+- **The client no longer sends `cwd` to the host.** `getProjectContext` carries `sessionId` only and the host resolves the session workspace from the session header; the client previously passed the sidebar host's `scope.cwd` as a fallback hint.
+- **The DSH floor is raised to `0.2.0-rc.2`.** `engines.dsh` and the `@deepseek-ai/dsh-client-locale` peer narrow to `>=0.2.0-rc.2 <0.3.0-0` together.
+
 ## [1.0.1] - 2026-10-04
 
 ### 新增

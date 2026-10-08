@@ -31,7 +31,7 @@ dsh-git-forge 一键安装
   --restart    装完尝试 pm2 restart dsh-web
   --dry-run    只打印操作
 
-前置：已安装并运行过 dsh web；建议已装 dsh-better-sidebar（侧栏 Tab 依赖）。
+前置：已安装并运行过 dsh web。
 EOF
     exit 0
   fi
@@ -157,7 +157,6 @@ say "执行 $CLI plugin --profile web add $ADD_SPEC ..."
 if ! $CLI plugin --profile web add "$ADD_SPEC" 2>&1 | tail -n +1; then
   warn "dsh plugin add 失败。可检查网络、registry，或手动："
   warn "  cd $PROFILE_DIR && pnpm install"
-  warn "前置建议：dsh plugin --profile web add dsh-better-sidebar"
   exit 1
 fi
 

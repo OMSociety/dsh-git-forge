@@ -8,7 +8,7 @@
 
   <p>
     <a href="https://github.com/OMSociety/dsh-git-forge/releases"><img src="https://img.shields.io/github/v/tag/OMSociety/dsh-git-forge?label=version&color=4f6ef7" alt="Version"></a>
-    <a href="https://github.com/deepseek-ai/dsh"><img src="https://img.shields.io/badge/DSH-%3E%3D0.1.7--rc.2_%3C0.3.0--0-4f6ef7" alt="DSH"></a>
+    <a href="https://github.com/deepseek-ai/dsh"><img src="https://img.shields.io/badge/DSH-%3E%3D0.2.0--rc.2_%3C0.3.0--0-4f6ef7" alt="DSH"></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/OMSociety/dsh-git-forge?color=4f6ef7" alt="License"></a>
     <a href="https://github.com/OMSociety/dsh-git-forge/stargazers"><img src="https://img.shields.io/github/stars/OMSociety/dsh-git-forge?color=4f6ef7" alt="Stars"></a>
     <a href="https://github.com/OMSociety/dsh-git-forge/issues"><img src="https://img.shields.io/github/issues/OMSociety/dsh-git-forge?color=4f6ef7" alt="Issues"></a>
@@ -19,7 +19,7 @@
 
 ## 这是什么
 
-**DSH Git Forge** 是 [DeepSeek Harness](https://github.com/deepseek-ai/dsh) 的社区插件，在右侧栏宿主 [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) 里给你一个 **Forge 账号库 + 按项目授权 + 推送策略** 的管理面。
+**DSH Git Forge** 是 [DeepSeek Harness](https://github.com/deepseek-ai/dsh) 的社区插件，在 DSH 官方右侧栏里给你一个 **Forge 账号库 + 按项目授权 + 推送策略** 的管理面。
 
 它管两件事：
 
@@ -46,11 +46,11 @@ SSH 远程与系统 `gh auth` 不受影响，仍走本机 SSH / `gh`；本插件
 
 ```powershell
 # 1) 先停掉 dsh web（运行中的服务会锁住依赖，装完再起）
-dsh plugin --profile web add "dsh-git-forge@1.0.1"
+dsh plugin --profile web add "dsh-git-forge@1.1.0"
 # 2) 重新启动 dsh web
 ```
 
-包已发布到 npm，随包提供预构建产物，本地不需要构建步骤；换版本就把 `@1.0.1` 换成目标版本。
+包已发布到 npm，随包提供预构建产物，本地不需要构建步骤；换版本就把 `@1.1.0` 换成目标版本。
 
 **方式二：从 GitHub 源安装**
 
@@ -70,9 +70,9 @@ curl -fsSL https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/script
 irm https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/install.ps1 | iex
 ```
 
-脚本默认走 GitHub 源（`bash scripts/install.sh --from npm 1.0.1` 可切到 npm），除安装外还会把 profile 的 `minimumReleaseAgeExclude` 补上本插件、校验 `dsh.profile.bundles` 确实写入、清掉旧版手写在 profile `cordis.patch.yml` 里的挂载（先加 `--dry-run` 可只看计划不动手）。
+脚本默认走 GitHub 源（`bash scripts/install.sh --from npm 1.1.0` 可切到 npm），除安装外还会把 profile 的 `minimumReleaseAgeExclude` 补上本插件、校验 `dsh.profile.bundles` 确实写入、清掉旧版手写在 profile `cordis.patch.yml` 里的挂载（先加 `--dry-run` 可只看计划不动手）。
 
-> **提示**：装好后**刷新一下浏览器页面**，右侧栏才会出现「Git 凭据」入口——只重启宿主不够，客户端产物是页面加载时取的。
+> **提示**：装好后**刷新一下浏览器页面**，「Git 凭据」从右侧栏的引导页打开——只重启宿主不够，客户端产物是页面加载时取的。
 
 **装完怎么用**
 
@@ -128,11 +128,8 @@ irm https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/insta
 
 ## 环境要求
 
-- DSH web profile，DSH 版本 `>=0.1.7-rc.2 <0.3.0-0`
-- 右侧栏宿主 **dsh-better-sidebar** `>=0.12.0`
+- DSH web profile，DSH 版本 `>=0.2.0-rc.2 <0.3.0-0`
 - Node.js `>= 20`
-
-> **提示**：升级到 DSH 0.2.x 之前，先确认右侧栏宿主已发布覆盖 0.2 的版本。
 
 ## 开发
 
@@ -157,7 +154,6 @@ cordis.patch.yml        包内 bundle patch，CLI 据此写入 dsh.profile.bundl
 
 - 如果这个插件对你有帮助，欢迎点亮 Star；有问题或建议请提 [Issue](https://github.com/OMSociety/dsh-git-forge/issues) 或 [Pull Request](https://github.com/OMSociety/dsh-git-forge/pulls)。
 - 变更记录见 [CHANGELOG](CHANGELOG.md)。
-- [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar)：右侧栏宿主与 Tab 契约
 - [dsh-ssh-tunnel](https://github.com/OMSociety/dsh-ssh-tunnel)：同门插件，主机库与侧栏交互与本案对齐
 - [DeepSeek Harness](https://github.com/deepseek-ai/dsh)：插件、工具与 agent shell 的宿主
 
