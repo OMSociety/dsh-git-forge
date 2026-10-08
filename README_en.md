@@ -7,7 +7,7 @@
   <p>Accounts and tokens stay host-side. <strong>Per-project grants</strong> decide which account an agent uses; the <strong>push guard</strong> decides where that project may push.</p>
 
   <p>
-    <a href="https://github.com/OMSociety/dsh-git-forge/releases"><img src="https://img.shields.io/github/v/tag/OMSociety/dsh-git-forge?label=version&color=4f6ef7" alt="Version"></a>
+    <a href="https://www.npmjs.com/package/dsh-git-forge"><img src="https://img.shields.io/npm/v/dsh-git-forge?label=version&color=4f6ef7" alt="Version"></a>
     <a href="https://github.com/deepseek-ai/dsh"><img src="https://img.shields.io/badge/DSH-%3E%3D0.2.0--rc.2_%3C0.3.0--0-4f6ef7" alt="DSH"></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/OMSociety/dsh-git-forge?color=4f6ef7" alt="License"></a>
     <a href="https://github.com/OMSociety/dsh-git-forge/stargazers"><img src="https://img.shields.io/github/stars/OMSociety/dsh-git-forge?color=4f6ef7" alt="Stars"></a>
@@ -38,37 +38,14 @@ SSH remotes and the system `gh auth` are untouched and keep using your local SSH
 | **`GitForge` tool** | Four read-only actions: list accounts, list a project's granted accounts, read the policy, check whether a remote is allowed |
 | **UI parity** | Shares one sidebar interaction model with its sibling [dsh-ssh-tunnel](https://github.com/OMSociety/dsh-ssh-tunnel) |
 
-## Quick start
+## Installation
 
-**Option 1: install from npm (recommended)**
-
-```powershell
-# 1) stop dsh web first (a running server holds the dependency lock; start it again afterwards)
-dsh plugin --profile web add "dsh-git-forge@1.1.0"
-# 2) restart dsh web
-```
-
-The package is published to npm and ships the prebuilt artifacts, so no local build step is involved. Replace `@1.1.0` to install another version.
-
-**Option 2: install from the GitHub source**
+**Install from npm**
 
 ```powershell
-dsh plugin --profile web add "github:OMSociety/dsh-git-forge"
+# stop the running DSH first (a live service holds the dependency lock; start it again afterwards)
+dsh plugin --profile <profile> add "dsh-git-forge"
 ```
-
-To reproduce a specific install, pin a ref by appending `#<tag or commit sha>` to the repository URL.
-
-**Option 3: one-line installer**
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/install.sh | bash
-```
-
-```powershell
-irm https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/install.ps1 | iex
-```
-
-The script installs from the GitHub source by default (`bash scripts/install.sh --from npm 1.1.0` switches to npm). Besides installing, it adds this plugin to the profile's `minimumReleaseAgeExclude`, verifies that `dsh.profile.bundles` really received the entry, and removes the mount older versions wrote by hand into the profile's `cordis.patch.yml`. Add `--dry-run` to print the plan without touching anything.
 
 > **Note**: After installing, **refresh the browser page**; the "Git Credentials" tab is opened from the right sidebar's guide page — restarting the host alone is not enough, because the client artifact is fetched when the page loads.
 
@@ -135,7 +112,6 @@ Under `$DSH_HOME/git-forge/` (directory mode `0700`):
 npm test                   # node --test: full regression of the smoke scripts
 npm run check              # syntax + smoke tests
 bash scripts/sync-to-dsh.sh   # register this checkout into the web profile as link: (dev)
-bash scripts/install.sh --dry-run   # print the install plan without touching the profile
 ```
 
 Layout and where to change what:

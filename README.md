@@ -7,14 +7,14 @@
   <p>账号库与 token 只落在宿主侧。<strong>按项目授权</strong>决定 agent 用哪个账号，<strong>push 拦截</strong>决定这个项目允许推到哪。</p>
 
   <p>
-    <a href="https://github.com/OMSociety/dsh-git-forge/releases"><img src="https://img.shields.io/github/v/tag/OMSociety/dsh-git-forge?label=version&color=4f6ef7" alt="Version"></a>
+    <a href="https://www.npmjs.com/package/dsh-git-forge"><img src="https://img.shields.io/npm/v/dsh-git-forge?label=version&color=4f6ef7" alt="Version"></a>
     <a href="https://github.com/deepseek-ai/dsh"><img src="https://img.shields.io/badge/DSH-%3E%3D0.2.0--rc.2_%3C0.3.0--0-4f6ef7" alt="DSH"></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/OMSociety/dsh-git-forge?color=4f6ef7" alt="License"></a>
     <a href="https://github.com/OMSociety/dsh-git-forge/stargazers"><img src="https://img.shields.io/github/stars/OMSociety/dsh-git-forge?color=4f6ef7" alt="Stars"></a>
     <a href="https://github.com/OMSociety/dsh-git-forge/issues"><img src="https://img.shields.io/github/issues/OMSociety/dsh-git-forge?color=4f6ef7" alt="Issues"></a>
   </p>
 
-<a href="#这是什么">这是什么</a> • <a href="#核心特性">核心特性</a> • <a href="#快速开始">快速开始</a> • <a href="#侧栏">侧栏</a> • <a href="#模型工具">模型工具</a> • <a href="#数据放在哪">数据放在哪</a> • <a href="#安全">安全</a> • <a href="#开发">开发</a> • <a href="#许可证与作者">许可证与作者</a>
+<a href="#这是什么">这是什么</a> • <a href="#核心特性">核心特性</a> • <a href="#安装方式">安装方式</a> • <a href="#侧栏">侧栏</a> • <a href="#模型工具">模型工具</a> • <a href="#数据放在哪">数据放在哪</a> • <a href="#安全">安全</a> • <a href="#开发">开发</a> • <a href="#许可证与作者">许可证与作者</a>
 </div>
 
 ## 这是什么
@@ -40,37 +40,14 @@ SSH 远程与系统 `gh auth` 不受影响，仍走本机 SSH / `gh`；本插件
 | **模型工具 GitForge** | 四个只读动作：看账号库、看某项目授权、看策略、校验某个 remote 是否被允许 |
 | **UI 对齐** | 与同门的 [dsh-ssh-tunnel](https://github.com/OMSociety/dsh-ssh-tunnel) 共用一套侧栏交互 |
 
-## 快速开始
+## 安装方式
 
-**方式一：从 npm 安装（推荐）**
-
-```powershell
-# 1) 先停掉 dsh web（运行中的服务会锁住依赖，装完再起）
-dsh plugin --profile web add "dsh-git-forge@1.1.0"
-# 2) 重新启动 dsh web
-```
-
-包已发布到 npm，随包提供预构建产物，本地不需要构建步骤；换版本就把 `@1.1.0` 换成目标版本。
-
-**方式二：从 GitHub 源安装**
+**从 npm 安装**
 
 ```powershell
-dsh plugin --profile web add "github:OMSociety/dsh-git-forge"
+# 先停掉正在运行的 DSH（运行中的服务会锁住依赖，装完再起）
+dsh plugin --profile <profile> add "dsh-git-forge"
 ```
-
-想复现某次安装就钉住 ref：在仓库地址后加 `#<tag 或提交 sha>`。
-
-**方式三：一键脚本**
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/install.sh | bash
-```
-
-```powershell
-irm https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/install.ps1 | iex
-```
-
-脚本默认走 GitHub 源（`bash scripts/install.sh --from npm 1.1.0` 可切到 npm），除安装外还会把 profile 的 `minimumReleaseAgeExclude` 补上本插件、校验 `dsh.profile.bundles` 确实写入、清掉旧版手写在 profile `cordis.patch.yml` 里的挂载（先加 `--dry-run` 可只看计划不动手）。
 
 > **提示**：装好后**刷新一下浏览器页面**，「Git 凭据」从右侧栏的引导页打开——只重启宿主不够，客户端产物是页面加载时取的。
 
@@ -137,7 +114,6 @@ irm https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/insta
 npm test                   # node --test：自检脚本全量回归
 npm run check              # 语法 + 自检
 bash scripts/sync-to-dsh.sh   # 以 link: 方式把本仓库接入 web profile（开发用）
-bash scripts/install.sh --dry-run   # 只看安装计划，不动 profile
 ```
 
 目录与「改东西去哪」：
