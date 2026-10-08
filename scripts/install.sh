@@ -2,15 +2,16 @@
 # =============================================================================
 # dsh-git-forge 一键安装（官方 CLI + bundle 自动挂载）
 #
-#   dsh plugin --profile web add <spec>
+#   dsh plugin --profile <名称> add <spec>
 #
 # 包内 dsh.bundle.patch（cordis.patch.yml）会由 CLI 写入
 # dsh.profile.bundles，无需手写 profile cordis.patch.yml。
 #
 # 用法：
-#   bash scripts/install.sh [版本] [--restart] [--dry-run] [--from github|npm]
+#   bash scripts/install.sh [版本] --profile <名称> [--restart] [--dry-run] [--from github|npm] [-h|--help]
 #
 #   版本         npm/git 版本；github 源可省略（默认 HEAD）或传 branch/tag/commit
+#   --profile    目标 profile 名称（必填，无默认值；缺失或不存在时列出实存 profile 并退出 2）
 #   --from       github（默认，仓库尚未上 npm 时）| npm
 #   --restart    尝试 pm2 restart dsh-web
 #   --dry-run    只打印步骤
@@ -19,61 +20,95 @@
 # =============================================================================
 set -euo pipefail
 
-for arg in "$@"; do
-  if [ "$arg" = "-h" ] || [ "$arg" = "--help" ]; then
-    cat <<'EOF'
-dsh-git-forge 一键安装
-
-用法：bash scripts/install.sh [版本] [--restart] [--dry-run] [--from github|npm]
-
-  版本         缺省：github 用默认分支；npm 用 latest
-  --from       github（默认）| npm
-  --restart    装完尝试 pm2 restart dsh-web
-  --dry-run    只打印操作
-
-前置：已安装并运行过 dsh web。
-EOF
-    exit 0
-  fi
-done
-
 PKG="dsh-git-forge"
 PLUGIN_ID="git-forge"
 GITHUB_REPO="${GITHUB_REPO:-OMSociety/dsh-git-forge}"
 DSH_HOME="${DSH_HOME:-${HOME:-${USERPROFILE:-}}/.dsh}"
-PROFILE_DIR="$DSH_HOME/profiles/web"
-WS_YML="$PROFILE_DIR/pnpm-workspace.yaml"
-PATCH_YML="$PROFILE_DIR/cordis.patch.yml"
 REGISTRY="${REGISTRY:-https://registry.npmjs.org}"
 DSH_CMD="${DSH_CMD:-dsh}"
 
-RESTART=false
-DRY_RUN=false
-FROM="github"
-VERSION_SPEC=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --restart) RESTART=true; shift ;;
-    --dry-run) DRY_RUN=true; shift ;;
-    --from)
-      [ $# -ge 2 ] || { echo "--from 需要 github|npm" >&2; exit 2; }
-      FROM="$2"; shift 2
-      ;;
-    --from=github) FROM="github"; shift ;;
-    --from=npm) FROM="npm"; shift ;;
-    -h|--help) shift ;;
-    -*)
-      echo "未知参数: ${1}（用 -h 查看用法）" >&2
-      exit 2
-      ;;
-    *) VERSION_SPEC="$1"; shift ;;
-  esac
-done
-case "$FROM" in github|npm) ;; *) echo "--from 只能是 github 或 npm" >&2; exit 2 ;; esac
+usage() {
+  cat <<'EOF'
+dsh-git-forge 一键安装
+
+用法：bash scripts/install.sh [版本] --profile <名称> [--restart] [--dry-run] [--from github|npm] [-h|--help]
+
+  版本         缺省：github 用默认分支；npm 用 latest
+  --profile    目标 profile 名称（必填，无默认值）
+  --from       github（默认）| npm
+  --restart    装完尝试 pm2 restart dsh-web
+  --dry-run    只打印操作
+  -h|--help    显示本帮助
+
+前置：目标 profile 已初始化（含 package.json 与 pnpm-workspace.yaml）。
+EOF
+}
 
 say()  { printf '\033[32m[install]\033[0m %s\n' "$*"; }
 warn() { printf '\033[33m[warn]\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[31m[error]\033[0m %s\n' "$*" >&2; exit 1; }
+
+list_profiles() {
+  if [ ! -d "$DSH_HOME/profiles" ]; then
+    echo "  （未找到 $DSH_HOME/profiles）"
+    return 0
+  fi
+  local any="" d
+  for d in "$DSH_HOME"/profiles/*/; do
+    [ -d "$d" ] || continue
+    any=1
+    echo "  - $(basename "$d")"
+  done
+  [ -n "$any" ] || echo "  （$DSH_HOME/profiles 下没有 profile）"
+}
+
+# ---------- 参数解析 ----------
+PROFILE_NAME=""
+RESTART=false
+DRY_RUN=false
+FROM="github"
+VERSION_SPEC=""
+SHOW_HELP=false
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help) SHOW_HELP=true; shift ;;
+    --profile)
+      [ $# -ge 2 ] || { echo "[error] --profile 需要一个名称（用 -h 查看用法）" >&2; exit 2; }
+      PROFILE_NAME="$2"; shift 2 ;;
+    --profile=*) PROFILE_NAME="${1#*=}"; shift ;;
+    --restart) RESTART=true; shift ;;
+    --dry-run) DRY_RUN=true; shift ;;
+    --from)
+      [ $# -ge 2 ] || { echo "[error] --from 需要 github|npm（用 -h 查看用法）" >&2; exit 2; }
+      FROM="$2"; shift 2 ;;
+    --from=*) FROM="${1#*=}"; shift ;;
+    -*) echo "[error] 未知参数: $1（用 -h 查看用法）" >&2; exit 2 ;;
+    *) VERSION_SPEC="$1"; shift ;;
+  esac
+done
+
+if [ "$SHOW_HELP" = true ]; then usage; exit 0; fi
+
+case "$FROM" in
+  github|npm) ;;
+  *) echo "[error] --from 只能是 github 或 npm（当前: $FROM）" >&2; exit 2 ;;
+esac
+
+if [ -z "$PROFILE_NAME" ]; then
+  echo "[error] 缺少 --profile 参数。$DSH_HOME/profiles/ 下实存 profile：" >&2
+  list_profiles >&2
+  exit 2
+fi
+
+PROFILE_DIR="$DSH_HOME/profiles/$PROFILE_NAME"
+WS_YML="$PROFILE_DIR/pnpm-workspace.yaml"
+PATCH_YML="$PROFILE_DIR/cordis.patch.yml"
+
+if [ ! -d "$PROFILE_DIR" ]; then
+  echo "[error] profile 不存在: $PROFILE_NAME（$PROFILE_DIR）。$DSH_HOME/profiles/ 下实存 profile：" >&2
+  list_profiles >&2
+  exit 2
+fi
 
 dsh_cli() {
   if command -v "$DSH_CMD" >/dev/null 2>&1; then
@@ -116,17 +151,16 @@ resolve_add_spec() {
 command -v node >/dev/null 2>&1 || die "未找到 node（需要 Node.js ≥ 20）。"
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null)" || NODE_MAJOR=0
 [ "${NODE_MAJOR:-0}" -ge 20 ] || die "Node.js $(node -v) 过旧（需要 ≥ 20）。"
-[ -d "$PROFILE_DIR" ] || die "找不到 profile 目录：${PROFILE_DIR}（请先运行过 dsh web）"
-[ -f "$WS_YML" ] || die "找不到 ${WS_YML}（请先初始化 web profile）"
+[ -f "$WS_YML" ] || die "找不到 $WS_YML（profile 未初始化？）"
 
 ADD_SPEC="$(resolve_add_spec)"
 CLI="$(dsh_cli)"
-say "目标：$CLI plugin --profile web add ${ADD_SPEC}（profile: ${PROFILE_DIR}）"
+say "目标：$CLI plugin --profile $PROFILE_NAME add ${ADD_SPEC}（profile 目录: ${PROFILE_DIR}）"
 say "来源：${FROM}（仓库 ${GITHUB_REPO}）"
 
 if [ "$DRY_RUN" = true ]; then
   say "[dry-run] 1) minimumReleaseAgeExclude += ${PKG}"
-  say "[dry-run] 2) $CLI plugin --profile web add ${ADD_SPEC}"
+  say "[dry-run] 2) $CLI plugin --profile $PROFILE_NAME add ${ADD_SPEC}"
   say "[dry-run] 3) 校验 dsh.profile.bundles 含 ${PKG}"
   say "[dry-run] 4) 移除 profile cordis.patch.yml 中 id: ${PLUGIN_ID} 的旧手动挂载"
   if [ "$RESTART" = true ]; then say "[dry-run] 5) pm2 restart dsh-web"; else say "[dry-run] 5) 提示手动重启"; fi
@@ -153,8 +187,8 @@ console.log(t === before ? "unchanged" : "updated");
   && say "已写入 ${WS_YML}：minimumReleaseAgeExclude（${PKG}）" \
   || say "workspace 设置已就绪，跳过"
 
-say "执行 $CLI plugin --profile web add $ADD_SPEC ..."
-if ! $CLI plugin --profile web add "$ADD_SPEC" 2>&1 | tail -n +1; then
+say "执行 $CLI plugin --profile $PROFILE_NAME add $ADD_SPEC ..."
+if ! $CLI plugin --profile "$PROFILE_NAME" add "$ADD_SPEC" 2>&1 | tail -n +1; then
   warn "dsh plugin add 失败。可检查网络、registry，或手动："
   warn "  cd $PROFILE_DIR && pnpm install"
   exit 1
@@ -211,8 +245,8 @@ else {
     || say "无旧手动挂载行，跳过"
 fi
 
-say "安装完成：${ADD_SPEC}"
-say "验证：dsh --profile web --dump-config | grep -n '${PLUGIN_ID}\\|${PKG}'"
+say "安装完成：${ADD_SPEC}（profile: $PROFILE_NAME）"
+say "验证：dsh --profile $PROFILE_NAME --dump-config | grep -n '${PLUGIN_ID}\\|${PKG}'"
 
 if [ "$RESTART" = true ]; then
   if command -v pm2 >/dev/null 2>&1; then

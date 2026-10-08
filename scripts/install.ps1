@@ -2,13 +2,16 @@
 # dsh-git-forge one-click install (Windows PowerShell 5.1+ / pwsh)
 #
 # Usage:
-#   irm https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/install.ps1 | iex
-#   & ([scriptblock]::Create((irm 'https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/install.ps1'))) -Version main -From github -Restart
+#   & ([scriptblock]::Create((irm 'https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/scripts/install.ps1'))) -Profile <name> -Version main -From github -Restart
+#   powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Profile <name> [-Version <ver>] [-From github|npm] [-Restart] [-DryRun]
+#
+#   -Profile <name>   target profile name (required, no default)
 # =============================================================================
 param(
   [string]$Version = '',
   [ValidateSet('github', 'npm')]
   [string]$From = 'github',
+  [string]$Profile = '',
   [switch]$Restart,
   [switch]$DryRun
 )
@@ -22,13 +25,35 @@ if ($env:DSH_HOME) { $DSH_HOME = $env:DSH_HOME }
 elseif ($env:USERPROFILE) { $DSH_HOME = Join-Path $env:USERPROFILE '.dsh' }
 else { $DSH_HOME = Join-Path $HOME '.dsh' }
 
-$PROFILE_DIR = Join-Path $DSH_HOME 'profiles\web'
-$WS_YML = Join-Path $PROFILE_DIR 'pnpm-workspace.yaml'
-$PATCH_YML = Join-Path $PROFILE_DIR 'cordis.patch.yml'
+$ProfilesDir = Join-Path $DSH_HOME 'profiles'
 
 function Say([string]$m)  { Write-Host "[install] $m" -ForegroundColor Green }
 function Warn([string]$m) { Write-Host "[warn] $m" -ForegroundColor Yellow }
 function Die([string]$m)  { Write-Host "[error] $m" -ForegroundColor Red; exit 1 }
+
+function Show-Profiles {
+  if (-not (Test-Path -LiteralPath $ProfilesDir -PathType Container)) { Write-Host "  (profiles dir not found: $ProfilesDir)"; return }
+  $items = @(Get-ChildItem -LiteralPath $ProfilesDir -Directory -ErrorAction SilentlyContinue)
+  if ($items.Count -eq 0) { Write-Host "  (no profile under $ProfilesDir)"; return }
+  foreach ($p in $items) { Write-Host "  - $($p.Name)" }
+}
+
+# -Profile is required (validated manually so it never prompts interactively)
+if ([string]::IsNullOrWhiteSpace($Profile)) {
+  Write-Host "[error] -Profile is required. Existing profiles under $ProfilesDir`:" -ForegroundColor Red
+  Show-Profiles
+  exit 2
+}
+
+$PROFILE_DIR = Join-Path $ProfilesDir $Profile
+$WS_YML = Join-Path $PROFILE_DIR 'pnpm-workspace.yaml'
+$PATCH_YML = Join-Path $PROFILE_DIR 'cordis.patch.yml'
+
+if (-not (Test-Path -LiteralPath $PROFILE_DIR -PathType Container)) {
+  Write-Host "[error] profile not found: $Profile ($PROFILE_DIR). Existing profiles:" -ForegroundColor Red
+  Show-Profiles
+  exit 2
+}
 
 function Get-DshCli {
   if ($env:DSH_CMD) { return $env:DSH_CMD }
@@ -58,14 +83,13 @@ function Resolve-AddSpec {
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) { Die 'Node.js not found (need >= 20).' }
 $NodeMajor = [int](& node -p "process.versions.node.split('.')[0]")
 if ($NodeMajor -lt 20) { Die "Node.js $(& node -v) is too old (need >= 20)." }
-if (-not (Test-Path $PROFILE_DIR)) { Die "Profile dir missing: $PROFILE_DIR" }
-if (-not (Test-Path $WS_YML)) { Die "Missing $WS_YML" }
+if (-not (Test-Path $WS_YML)) { Die "Missing $WS_YML (profile not initialized?)" }
 
 $ADD_SPEC = Resolve-AddSpec
 $CLI = Get-DshCli
 if (-not $CLI) { Die 'dsh/npx not found. Install DSH or set DSH_CMD.' }
 
-Say "Target: $CLI plugin --profile web add $ADD_SPEC"
+Say "Target: $CLI plugin --profile $Profile add $ADD_SPEC (profile dir: $PROFILE_DIR)"
 Say "Source: $From ($GITHUB_REPO)"
 
 if ($DryRun) {
@@ -94,9 +118,9 @@ if ($wsResult -eq 'updated') { Say "Updated $WS_YML minimumReleaseAgeExclude" } 
 
 Say "Running plugin add..."
 if ($CLI -eq 'npx') {
-  & npx -y --package @deepseek-ai/dsh dsh plugin --profile web add $ADD_SPEC
+  & npx -y --package @deepseek-ai/dsh dsh plugin --profile $Profile add $ADD_SPEC
 } else {
-  & $CLI plugin --profile web add $ADD_SPEC
+  & $CLI plugin --profile $Profile add $ADD_SPEC
 }
 if ($LASTEXITCODE -ne 0) { Die 'dsh plugin add failed' }
 
@@ -139,7 +163,8 @@ else { fs.writeFileSync(p, out.join("\n").replace(/\n{3,}/g, "\n\n")); console.l
   if ($mr -eq 'removed') { Say "Removed manual $PLUGIN_ID mount from cordis.patch.yml" }
 }
 
-Say "Done: $ADD_SPEC"
+Say "Done: $ADD_SPEC (profile: $Profile)"
+Say "Verify: dsh --profile $Profile --dump-config | Select-String '$PLUGIN_ID|$PKG'"
 if ($Restart) {
   if (Get-Command pm2 -ErrorAction SilentlyContinue) { pm2 restart dsh-web }
   else { Warn 'pm2 not found; restart DSH web manually' }
