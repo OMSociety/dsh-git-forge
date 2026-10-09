@@ -8,8 +8,9 @@
  *
  *   2) node bundle-check.cjs --ignored-builds <profileDir>
  *      读取 <profileDir>/node_modules/.modules.yaml 的 ignoredBuilds 段，
- *      打印 allowBuilds 可复制豁免指引。advisory 性质：恒退出 0；
- *      .modules.yaml 不存在时跳过不报错。
+ *      打印 allowBuilds 可复制豁免指引。advisory 性质：未检出退 0
+ *      （.modules.yaml 不存在或 ignoredBuilds 为空）；检出后退 1——
+ *      安装脚本只 warn，不中断安装。
  */
 const fs = require('fs');
 const path = require('path');
@@ -79,7 +80,7 @@ if (argv[0] === '--ignored-builds') {
   out.push('');
   out.push('注意: 键必须是上面 ignoredBuilds 行的原文（与 lockfile 中的 spec 逐字一致）；纯包名不生效。');
   console.log(out.join('\n'));
-  process.exit(0);
+  process.exit(1);
 }
 
 // 模式 1：bundle 校验

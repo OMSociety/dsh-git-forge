@@ -32,7 +32,8 @@ function indentOf(line) {
 
 // 返回所有「含 id 的 insert 块」的 [start, end) 行区间
 function findBlocks(lines, id) {
-  const idRe = new RegExp('id:[ \\t]*' + escapeRe(id) + '\\b');
+  // (?![\w-])：id 为 git-forge 时不得误配 git-forge-extra
+  const idRe = new RegExp('id:[ \\t]*' + escapeRe(id) + '(?![\\w-])');
   const blocks = [];
   for (let i = 0; i < lines.length; i++) {
     if (!/^[ \t]*- insert:[ \t]*$/.test(lines[i])) continue;
@@ -82,14 +83,15 @@ try {
   fail('读取失败: ' + e.message);
 }
 
-const lines = original.split('\n');
+const hadCRLF = original.includes('\r\n');
+const lines = original.split(/\r?\n/);
 const blocks = findBlocks(lines, id);
 if (blocks.length === 0) {
   console.log('none');
   process.exit(0);
 }
 
-const updated = removeBlocks(lines, blocks).join('\n');
+const updated = removeBlocks(lines, blocks).join(hadCRLF ? '\r\n' : '\n');
 try {
   fs.writeFileSync(file, updated, 'utf8');
 } catch (e) {
@@ -103,7 +105,7 @@ try {
 } catch (e) {
   fail('回读失败: ' + e.message);
 }
-if (findBlocks(readback.split('\n'), id).length !== 0) {
+if (findBlocks(readback.split(/\r?\n/), id).length !== 0) {
   try {
     fs.writeFileSync(file, original, 'utf8');
   } catch (e2) {

@@ -51,7 +51,8 @@ Usage:
   -DryRun           print the plan only, write nothing
   -h                show this help
 
-Env: DSH_HOME (default %USERPROFILE%\.dsh), DSH_CMD (default dsh), REGISTRY,
+Env: DSH_HOME (default %USERPROFILE%\.dsh), DSH_CMD (default dsh; split on whitespace,
+     paths with spaces are not supported), REGISTRY,
      GITHUB_REPO, DSH_INSTALL_YES=1 (skip the npx fallback confirmation)
 '@
 }
@@ -109,6 +110,24 @@ $NodeMajor = [int](& node -p "process.versions.node.split('.')[0]")
 if ($LASTEXITCODE -ne 0) { Die 'failed to query the node version.' }
 if ($NodeMajor -lt 20) { Die "Node.js is too old (need >= 20)." }
 
+function Invoke-RegistryViewWithTimeout([string]$tool, [int]$timeoutSec) {
+  # Time-bounded registry lookup: a hanging npm/pnpm must not stall the install.
+  $job = Start-Job -ScriptBlock {
+    param($t, $pkg, $reg)
+    & $t view $pkg version "--registry=$reg" 2>$null | Select-Object -Last 1
+  } -ArgumentList $tool, $PKG, $REGISTRY
+  $done = Wait-Job $job -Timeout $timeoutSec
+  if (-not $done) {
+    Stop-Job $job -ErrorAction SilentlyContinue
+    Remove-Job $job -Force -ErrorAction SilentlyContinue
+    return ''
+  }
+  $out = @(Receive-Job $job)
+  Remove-Job $job -Force -ErrorAction SilentlyContinue
+  if ($out.Count -eq 0) { return '' }
+  return ([string]$out[-1]).Trim()
+}
+
 function Resolve-AddSpec {
   if ($From -eq 'npm') {
     $given = 'latest'
@@ -116,8 +135,8 @@ function Resolve-AddSpec {
     if ($given -eq 'latest') {
       foreach ($tool in @('npm', 'pnpm')) {
         if (Get-Command $tool -ErrorAction SilentlyContinue) {
-          $v = & $tool view $PKG version "--registry=$REGISTRY" 2>$null | Select-Object -Last 1
-          if ($LASTEXITCODE -eq 0 -and $v) { return "$PKG@$([string]$v.Trim())" }
+          $v = Invoke-RegistryViewWithTimeout $tool 30
+          if ($v) { return "$PKG@$v" }
         }
       }
       return "$PKG@latest"
@@ -215,7 +234,7 @@ Say "bundle registered: dsh.profile.bundles contains $PKG"
 
 # ---------- 4) allowBuilds precheck (advisory) ----------
 & node $BundleCheckCjs --ignored-builds $ProfileDir
-if ($LASTEXITCODE -ne 0) { Warn 'allowBuilds precheck failed (install result unaffected).' }
+if ($LASTEXITCODE -ne 0) { Warn 'allowBuilds precheck found pnpm-skipped builds (guidance printed above); install result unaffected.' }
 
 # ---------- 5) legacy manual mount strip (only with -FixProfile) ----------
 if ($FixProfile -and (Test-Path -LiteralPath $PatchYml)) {
@@ -228,7 +247,7 @@ if ($FixProfile -and (Test-Path -LiteralPath $PatchYml)) {
 }
 
 Say "Done: $AddSpec (profile: $Profile)"
-Say "Verify: dsh --profile $Profile --dump-config | Select-String '$PLUGIN_ID|$PKG'"
+Say "Verify: Select-String '$PKG' '$PkgJson' should hit both the dependencies entry and the dsh.profile.bundles entry"
 
 if ($Restart) {
   if (Get-Command pm2 -ErrorAction SilentlyContinue) {

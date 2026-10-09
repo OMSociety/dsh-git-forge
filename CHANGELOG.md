@@ -10,6 +10,54 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-09
+
+### 新增
+
+- **`.gitattributes`**：`* text=auto eol=lf`、`*.ps1 eol=crlf`、`docs/logo.png binary`，跨平台检出换行一致。
+
+### 变更
+
+- **补录 1.1.0 之后发布的三笔变更**（7c3ffdb / 8985418 / e631ade）：
+  - 安装说明收敛为 npm 单一写法，版本徽章改 npm 源；
+  - 安装脚本 `--profile` / `-Profile` 必填，缺失或不存在时列出实存 profile 并退出 2；
+  - 安装脚本抽出 `scripts/lib/*.cjs` 助手（ws-exclude / bundle-check / strip-mount），profile 配置改写收进 `--fix-profile` 显式开关（幂等、写后回读断言）。
+- **`dsh.client.inject` 双写齐备**：`@deepseek-ai/dsh-client-locale` 与 `@deepseek-ai/dsh-client-ui-sidebar-right` 同时声明（两个 peer 此前已在 `peerDependencies` 里）。
+- **`sync-to-dsh.sh` 的 `DSH_PROFILE` 必填**（桌面版为 `desktop`），空值报错退出 2；README 的开发与环境要求段落同步照实。
+
+### 修复
+
+- **侧栏 API 同源校验**：`Sec-Fetch-Site: cross-site` 一律拒绝；请求缺该头时校验 `Origin` 与 `Host` 是否一致；宿主信任列表经 `webRuntime` 可选注入读取。
+- **push 检测锚定子命令**：`git` 之后跳过全局旗标与环境变量赋值再取子命令，`bash -lc` / `sh -c` 的引号载荷递归分类——引号里的 push 逃不过检测，commit message 与普通文字里的 "push" 触发误报。
+- **裸 push 放行链收紧**：remote 解析失败重试一次，仍失败且项目开启 enforce 时拒绝（fail-closed）。
+- **`GIT_CONFIG_GLOBAL` 回接用户全局配置**：生成的 gitconfig 首行 `include` 用户级 gitconfig，`user.name` / `user.email` / `http.proxy` 照常生效；空 `helper =` 的清空语义在 include 顺序下经实测保持正确。
+- **配置文件损坏隔离**：解析失败时把坏文件改名保留为 `<原名>.corrupt-<时间戳>` 并回退默认值，现场不丢。
+- **项目 key realpath 归一**：存在路径经 `realpathSync` 折叠 Windows 8.3 短名与符号链接；自检新增幂等回归。
+- **gitlab 默认值补全**：`PROVIDER_DEFAULTS.gitlab` → `gitlab.com` / `https://gitlab.com/api/v4`，与 README 对齐。
+- **脚本修复**：strip-mount 按 `/\r?\n/` 切分并保留原 EOL 风格，id 匹配改 `(?![\w-])` 防止前缀误删；bundle-check 检出 ignoredBuilds 退非 0；npm/pnpm registry 查询限时（bash `timeout`、PowerShell `Start-Job`）；安装后验证提示改文件级核验；`npm test` 注释、0600 的 POSIX 口径、helper 进程表述等文档修正。
+- **文案与清理**：token 提示照实写落盘位置（`$DSH_HOME/git-forge/secrets.json`），footer 照实写认证归属（HTTPS 由本插件 helper，SSH 仍走系统 SSH）；摘除未接线的 `openOfficial` 与 `joinUnderRoot`。
+
+### Changed
+
+- **Backfill of three changes shipped after 1.1.0** (7c3ffdb / 8985418 / e631ade):
+  - install docs collapsed to the npm path and version badges switched to npm;
+  - install scripts require `--profile` / `-Profile`; a missing or unknown profile lists the existing ones and exits 2;
+  - install scripts extract `scripts/lib/*.cjs` helpers (ws-exclude / bundle-check / strip-mount) and gate profile rewrites behind an explicit, idempotent `--fix-profile` with write-back verification.
+- **`dsh.client.inject` declares both packages**: `@deepseek-ai/dsh-client-locale` and `@deepseek-ai/dsh-client-ui-sidebar-right` (both were already peers in `peerDependencies`).
+- **`sync-to-dsh.sh` requires `DSH_PROFILE`** (`desktop` for the desktop app); an empty value errors with exit 2. The README development and requirements sections follow suit.
+
+### Fixed
+
+- **Sidebar API same-origin checks**: `Sec-Fetch-Site: cross-site` is always rejected; when the header is absent, `Origin` must match the `Host` header; the host trust list is read through an optional `webRuntime` injection.
+- **Push detection anchors the subcommand**: global flags and env assignments after `git` are skipped before the subcommand is read, and quoted payloads of `bash -lc` / `sh -c` are classified recursively — a push inside quotes is caught, while "push" inside commit messages or prose no longer triggers false positives.
+- **Bare-push resolution chain tightened**: a failed remote resolution retries once and then rejects when the project enforces grants (fail-closed).
+- **`GIT_CONFIG_GLOBAL` reconnects the user's global config**: the generated gitconfig `include`s the user-level gitconfig on its first line, so `user.name` / `user.email` / `http.proxy` keep working; the empty `helper =` reset semantics hold under that include order (verified empirically).
+- **Corrupt config quarantine**: a config file that fails to parse is renamed to `<name>.corrupt-<timestamp>` and defaults take over, preserving the evidence.
+- **Project keys realpath-normalized**: existing paths collapse through `realpathSync`, folding Windows 8.3 short names and symlinks; a smoke-test regression covers idempotence.
+- **gitlab defaults completed**: `PROVIDER_DEFAULTS.gitlab` → `gitlab.com` / `https://gitlab.com/api/v4`, matching the README.
+- **Script fixes**: strip-mount splits on `/\r?\n/` and preserves the file's EOL style, and its id match uses `(?![\w-])` to avoid over-deleting prefixed ids; bundle-check exits non-zero when ignoredBuilds is detected; npm/pnpm registry lookups are time-bounded (bash `timeout`, PowerShell `Start-Job`); the post-install verification hint is file-based; plus documentation corrections (`npm test` description, POSIX-only `0600` wording, helper process wording).
+- **Wording and cleanup**: the token hint states the real on-disk location (`$DSH_HOME/git-forge/secrets.json`) and the footer states the real auth ownership (HTTPS via this plugin's helper, SSH stays with the system); the unwired `openOfficial` and `joinUnderRoot` were removed.
+
 ## [1.1.0] - 2026-10-09
 
 ### 变更

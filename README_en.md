@@ -13,6 +13,8 @@
     <a href="https://github.com/OMSociety/dsh-git-forge/stargazers"><img src="https://img.shields.io/github/stars/OMSociety/dsh-git-forge?color=4f6ef7" alt="Stars"></a>
     <a href="https://github.com/OMSociety/dsh-git-forge/issues"><img src="https://img.shields.io/github/issues/OMSociety/dsh-git-forge?color=4f6ef7" alt="Issues"></a>
   </p>
+
+<a href="#what-this-is">What this is</a> • <a href="#features">Features</a> • <a href="#installation">Installation</a> • <a href="#sidebar">Sidebar</a> • <a href="#model-tool">Model tool</a> • <a href="#where-data-lives">Where data lives</a> • <a href="#security">Security</a> • <a href="#requirements">Requirements</a> • <a href="#development">Development</a> • <a href="#support-and-credits">Support and credits</a> • <a href="#license-and-author">License and author</a>
 </div>
 
 ## What this is
@@ -51,7 +53,7 @@ dsh plugin --profile <profile> add "dsh-git-forge"
 
 **First run**
 
-1. Open the "Git Forge" tab in the sidebar and add an account on the **Accounts** page (the token is entered in the sidebar, not in chat)
+1. Open the "Git Credentials" tab in the sidebar and add an account on the **Accounts** page (the token is entered in the sidebar, not in chat)
 2. Use the probe to confirm the token works
 3. Switch to **Project access**, tick that account and save — the current workspace now has push credentials
 4. Have the agent run HTTPS `git fetch` / `git push` in the project; the helper fills in the credential and the model never sees the token
@@ -71,21 +73,21 @@ One sidebar tab with three pages:
 
 | Action | Purpose | Arguments |
 |---|---|---|
-| `GitForge action=list_accounts` | List the account library (no tokens) | `project_path` (optional, defaults to the session workspace) |
+| `GitForge action=list_accounts` | List the account library (no tokens) | none |
 | `GitForge action=list_project_accounts` | List the accounts granted to a project | `project_path` |
 | `GitForge action=get_policy` | Read that project's policy: granted accounts, `enforcePush`, unbound default | `project_path` |
 | `GitForge action=check_remote` | Check whether a remote URL is allowed to push (does not push) | `url` (required) |
 
 ### Agent HTTPS and project paths
 
-- Grant key = the **DSH session workspace** (injected into agent shells as `DSH_GIT_FORGE_PROJECT`), not a nested path
-- Helper resolves the project as: `env` → exact cwd → walk parents under `/workspace`
+- Grant key = the **DSH session workspace** (injected into agent shells as `DSH_GIT_FORGE_PROJECT`), not a nested path; workspace paths are canonicalized through the filesystem state (realpath), so Windows 8.3 short names and symlinks collapse onto one key
+- Helper resolves the project as: `env` → exact cwd → walk parents (bounded to `/workspace` when cwd is under it, otherwise up to the filesystem root)
 - R1: credentials are auto-filled only when exactly **one** token account is granted for that host
-- An agent shell's `GIT_CONFIG_GLOBAL` points at `$DSH_HOME/git-forge/gitconfig`; the file first carries an empty `credential.helper` that clears the system-level helper, then this plugin's helper — so a system credential manager cannot pop a dialog and hang a headless shell
+- An agent shell's `GIT_CONFIG_GLOBAL` points at `$DSH_HOME/git-forge/gitconfig`; the first line `include`s your user-level gitconfig (`user.name` / `user.email` / `http.proxy` keep working), followed by an empty `credential.helper` that clears system-level helpers, then this plugin's helper — a system credential manager cannot pop a dialog and hang a headless shell, and user-configured helpers are cleared the same way
 
 ## Where data lives
 
-Under `$DSH_HOME/git-forge/` (directory mode `0700`):
+Under `$DSH_HOME/git-forge/` (directory mode `0700`; `0600`/`0700` modes apply on POSIX (Linux/macOS) only — Windows has no equivalent tightening):
 
 | File | Contents |
 |---|---|
@@ -94,24 +96,29 @@ Under `$DSH_HOME/git-forge/` (directory mode `0700`):
 | `grants.json` | `projectPathKey → accountIds[]` plus enforce / unbound policy |
 | `gitconfig` | Credential helper config injected into agent shells (holds no credentials) |
 
+> **Note**: if `accounts.json` / `secrets.json` / `grants.json` fail to parse, the corrupt file is renamed to `<name>.corrupt-<timestamp>` and defaults are used — the original is never overwritten away.
+
 ## Security
 
 - Tokens never appear in API results, tool results or model context
 - Push policy is enforced in the host's `tools.guard`, not left to the model
 - With no grants configured for a project, the push guard does **not** block by default (progressive enablement), and the helper supplies no credentials either
-- The helper reads `secrets.json` inside the host process only; rotate tokens immediately if `secrets.json` may have leaked
+- Tokens live only in the host-side data file `secrets.json`; the helper is a separate process spawned by git and reads it on demand; tokens never enter model context. Rotate tokens immediately if `secrets.json` may have leaked
+- The sidebar API enforces same-origin checks: `Sec-Fetch-Site: cross-site` is always rejected; when that header is absent, `Origin` must match the `Host` header or the request is rejected; non-browser clients carrying neither are allowed (lenient policy)
+- Push detection is a text-heuristic and has a known bypass surface (git renamed via an env var, git aliases, paths assembled through variables, non-bash/sh wrappers, uncovered prefixes like `time`/`nice`); this boundary states the detection scope, it is not an endorsement
+- In a project with grants, a bare `git push` whose remote cannot be resolved is retried once, then rejected (fail-closed)
 
 ## Requirements
 
-- A DSH web profile with DSH `>=0.2.0-rc.2 <0.3.0-0`
+- A DSH profile (desktop and self-hosted servers both work) with DSH `>=0.2.0-rc.2 <0.3.0-0`
 - Node.js `>= 20`
 
 ## Development
 
 ```powershell
-npm test                   # node --test: full regression of the smoke scripts
-npm run check              # syntax + smoke tests
-bash scripts/sync-to-dsh.sh   # register this checkout into the web profile as link: (dev)
+npm test                      # 21 offline checks (scripts/smoke-test.mjs)
+npm run check                 # syntax + smoke tests
+DSH_PROFILE=desktop bash scripts/sync-to-dsh.sh   # register this checkout into a DSH profile as link: (dev)
 ```
 
 Layout and where to change what:

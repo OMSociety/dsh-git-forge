@@ -6,11 +6,15 @@
 #   dsh plugin --profile <profile> add "link:<repo>"
 # 由 DSH 自己登记 dsh.profile.bundles，仓库改动无需再同步。
 #
-# 环境：DSH_PROFILE（默认 web）、DSH_CMD（默认 dsh）；DSH_HOME 由 dsh 自行解析。
+# 环境：DSH_PROFILE（必填，桌面版为 desktop）、DSH_CMD（默认 dsh）；DSH_HOME 由 dsh 自行解析。
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PROFILE="${DSH_PROFILE:-web}"
+PROFILE="${DSH_PROFILE:-}"
 DSH_CMD="${DSH_CMD:-dsh}"
+if [ -z "$PROFILE" ]; then
+  echo "未设置 DSH_PROFILE（桌面版用 desktop），例如：DSH_PROFILE=desktop bash scripts/sync-to-dsh.sh" >&2
+  exit 2
+fi
 
 command -v node >/dev/null 2>&1 || { echo "需要 node（>= 20）" >&2; exit 1; }
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null)" || NODE_MAJOR=0
@@ -29,4 +33,4 @@ fi
 echo "== 接入 profile ${PROFILE}（link） =="
 "$DSH_CMD" plugin --profile "$PROFILE" add "link:$ROOT"
 echo "已接入：$ROOT"
-echo "下一步：重启 dsh web，并硬刷新浏览器。"
+echo "下一步：重启 DSH。"

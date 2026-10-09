@@ -14,7 +14,7 @@
     <a href="https://github.com/OMSociety/dsh-git-forge/issues"><img src="https://img.shields.io/github/issues/OMSociety/dsh-git-forge?color=4f6ef7" alt="Issues"></a>
   </p>
 
-<a href="#这是什么">这是什么</a> • <a href="#核心特性">核心特性</a> • <a href="#安装方式">安装方式</a> • <a href="#侧栏">侧栏</a> • <a href="#模型工具">模型工具</a> • <a href="#数据放在哪">数据放在哪</a> • <a href="#安全">安全</a> • <a href="#开发">开发</a> • <a href="#许可证与作者">许可证与作者</a>
+<a href="#这是什么">这是什么</a> • <a href="#核心特性">核心特性</a> • <a href="#安装方式">安装方式</a> • <a href="#侧栏">侧栏</a> • <a href="#模型工具">模型工具</a> • <a href="#数据放在哪">数据放在哪</a> • <a href="#安全">安全</a> • <a href="#环境要求">环境要求</a> • <a href="#开发">开发</a> • <a href="#支持与致谢">支持与致谢</a> • <a href="#许可证与作者">许可证与作者</a>
 </div>
 
 ## 这是什么
@@ -73,21 +73,21 @@ dsh plugin --profile <profile> add "dsh-git-forge"
 
 | 动作 | 作用 | 参数 |
 |---|---|---|
-| `GitForge action=list_accounts` | 列出账号库（不含 token） | `project_path`（可省，默认当前会话工作区） |
+| `GitForge action=list_accounts` | 列出账号库（不含 token） | 无 |
 | `GitForge action=list_project_accounts` | 列出某项目已授权的账号 | `project_path` |
 | `GitForge action=get_policy` | 看该项目策略：授权账号、是否 `enforcePush`、未绑定项目默认 | `project_path` |
 | `GitForge action=check_remote` | 校验某个 remote URL 是否被允许推送（不推送） | `url`（必填） |
 
 ### Agent HTTPS 与项目路径
 
-- 授权 key = **DSH 会话工作区**（agent shell 里注入 `DSH_GIT_FORGE_PROJECT`），不是子仓路径
-- helper 找项目：`env` → cwd 精确匹配 → `/workspace` 下向父目录 walk
+- 授权 key = **DSH 会话工作区**（agent shell 里注入 `DSH_GIT_FORGE_PROJECT`），不是子仓路径；工作区路径按磁盘实态归一（realpath），Windows 8.3 短名与符号链接折叠到同一 key
+- helper 找项目：`env` → cwd 精确匹配 → 向父目录 walk（cwd 在 `/workspace` 下时上界为 `/workspace`，否则走到根）
 - R1：同一 host 仅当恰好 **1** 个已授权 **token** 账号时才自动注入凭据
-- agent shell 的 `GIT_CONFIG_GLOBAL` 指向 `$DSH_HOME/git-forge/gitconfig`；文件里先放一条空 `credential.helper` 清掉系统级 helper，再挂本插件 helper，因此系统凭据管理器的弹窗不会卡住无头 shell
+- agent shell 的 `GIT_CONFIG_GLOBAL` 指向 `$DSH_HOME/git-forge/gitconfig`；文件第一行 `include` 回接你的用户级 gitconfig（`user.name` / `user.email` / `http.proxy` 等照常生效），随后一条空 `credential.helper` 清掉系统级 helper，再挂本插件 helper——系统凭据管理器的弹窗不会卡住无头 shell，用户自己配的 helper 也会被同样清掉
 
 ## 数据放在哪
 
-`$DSH_HOME/git-forge/`（目录 `0700`）：
+`$DSH_HOME/git-forge/`（目录 `0700`；`0600`/`0700` 权限仅在 POSIX（Linux/macOS）生效，Windows 无等效收紧）：
 
 | 文件 | 内容 |
 |---|---|
@@ -96,24 +96,29 @@ dsh plugin --profile <profile> add "dsh-git-forge"
 | `grants.json` | `projectPathKey → accountIds[]` 与 enforce / unbound 策略 |
 | `gitconfig` | 注入给 agent shell 的 credential helper 配置（不含凭据） |
 
+> **注意**：`accounts.json` / `secrets.json` / `grants.json` 若解析失败，坏文件会被改名保留为 `<原名>.corrupt-<时间戳>` 并回退默认值，不会覆盖丢失现场。
+
 ## 安全
 
 - token 不出现在 API 结果、工具结果与模型上下文里
 - push 策略在 Host `tools.guard` 中硬拦截，不依赖模型自觉
 - 未给项目配置任何授权时，push 拦截器默认**不**拦截（便于渐进启用），helper 也不会凭空给出凭据
-- helper 只在宿主进程内读 `secrets.json`；`secrets.json` 疑似泄露请立即轮换 token
+- token 只落在宿主侧数据目录 `secrets.json`；helper 是由 git 拉起的独立进程，按需读取；token 不进模型上下文。`secrets.json` 疑似泄露请立即轮换 token
+- 侧栏 API 做同源校验：`Sec-Fetch-Site: cross-site` 一律拒绝；请求缺该头时校验 `Origin` 与 `Host` 是否一致，不一致拒绝；两者皆缺的非浏览器客户端放行（宽松策略）
+- push 检测基于命令文本启发式，已知绕过面（env 变量改名 git、git alias、路径经变量拼接、非 bash/sh 包装器、`time`/`nice` 等未覆盖前缀）；这一边界是明示的检测口径，不是放行依据
+- 配置了授权的项目里，裸 `git push` 的 remote 解析失败会重试一次，仍失败即拒绝（fail-closed）
 
 ## 环境要求
 
-- DSH web profile，DSH 版本 `>=0.2.0-rc.2 <0.3.0-0`
+- DSH profile（desktop 与服务器自建均可），DSH 版本 `>=0.2.0-rc.2 <0.3.0-0`
 - Node.js `>= 20`
 
 ## 开发
 
 ```powershell
-npm test                   # node --test：自检脚本全量回归
-npm run check              # 语法 + 自检
-bash scripts/sync-to-dsh.sh   # 以 link: 方式把本仓库接入 web profile（开发用）
+npm test                      # 21 项离线自检（scripts/smoke-test.mjs）
+npm run check                 # 语法 + 自检
+DSH_PROFILE=desktop bash scripts/sync-to-dsh.sh   # 以 link: 方式把本仓库接入 DSH profile（开发用）
 ```
 
 目录与「改东西去哪」：

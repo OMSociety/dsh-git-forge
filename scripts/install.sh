@@ -16,12 +16,12 @@
 #                   追加本包（幂等），并清理 cordis.patch.yml 里 id: git-forge 的
 #                   旧手动挂载块（幂等）。两者均写后回读断言，失败回滚并以非零码退出。
 #                   不带本参数时绝不改写这两个文件，只在缺条目时打 warn 提示。
-#   --from          github（默认，仓库尚未上 npm 时）| npm
+#   --from          github（默认）| npm
 #   --restart       尝试 pm2 restart dsh-web
 #   --dry-run       只打印步骤，不写任何文件
 #
-# 环境：DSH_HOME（默认 ~/.dsh）、DSH_CMD（默认 dsh）、REGISTRY、GITHUB_REPO、
-#       DSH_INSTALL_YES=1（跳过 npx 兜底的交互确认）
+# 环境：DSH_HOME（默认 ~/.dsh）、DSH_CMD（默认 dsh；执行时按空白分词，路径含空格不支持）、
+#       REGISTRY、GITHUB_REPO、DSH_INSTALL_YES=1（跳过 npx 兜底的交互确认）
 # =============================================================================
 set -euo pipefail
 
@@ -48,8 +48,8 @@ dsh-git-forge 一键安装
   --dry-run       只打印操作，不写任何文件
   -h|--help       显示本帮助
 
-环境：DSH_HOME（默认 ~/.dsh）、DSH_CMD（默认 dsh）、REGISTRY、GITHUB_REPO、
-      DSH_INSTALL_YES=1（跳过 npx 兜底确认）
+环境：DSH_HOME（默认 ~/.dsh）、DSH_CMD（默认 dsh；执行时按空白分词，路径含空格不支持）、
+      REGISTRY、GITHUB_REPO、DSH_INSTALL_YES=1（跳过 npx 兜底确认）
 
 前置：目标 profile 已初始化（含 package.json 与 pnpm-workspace.yaml）。
 EOF
@@ -135,16 +135,26 @@ command -v node >/dev/null 2>&1 || die "未找到 node（需要 Node.js ≥ 20�
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null)" || NODE_MAJOR=0
 [ "${NODE_MAJOR:-0}" -ge 20 ] || die "Node.js $(node -v 2>/dev/null) 过旧（需要 ≥ 20）。"
 
+registry_view() {
+  # Registry 查询限时：npm/pnpm 卡死不能拖住整个安装。
+  local tool="$1"
+  if command -v timeout >/dev/null 2>&1; then
+    timeout 30 "$tool" view "$PKG" version --registry="$REGISTRY" 2>/dev/null
+  else
+    "$tool" view "$PKG" version --registry="$REGISTRY" 2>/dev/null
+  fi
+}
+
 resolve_add_spec() {
   if [ "$FROM" = "npm" ]; then
     local given="${VERSION_SPEC:-latest}"
     if [ "$given" = "latest" ]; then
       local v=""
       if command -v npm >/dev/null 2>&1; then
-        v="$(npm view "$PKG" version --registry="$REGISTRY" 2>/dev/null)" || v=""
+        v="$(registry_view npm)" || v=""
       fi
       if [ -z "$v" ] && command -v pnpm >/dev/null 2>&1; then
-        v="$(pnpm view "$PKG" version --registry="$REGISTRY" 2>/dev/null)" || v=""
+        v="$(registry_view pnpm)" || v=""
       fi
       if [ -n "$v" ]; then printf '%s@%s' "$PKG" "$v"
       else printf '%s@latest' "$PKG"
@@ -248,7 +258,7 @@ say "bundle 已注册：dsh.profile.bundles 包含 $PKG"
 
 # ---------- 4) allowBuilds 预检（advisory） ----------
 if ! node "$LIB_DIR/bundle-check.cjs" --ignored-builds "$PROFILE_DIR"; then
-  warn "allowBuilds 预检异常（不影响安装结果）。"
+  warn "allowBuilds 预检发现被 pnpm 跳过构建的依赖（豁免指引见上方输出）；不影响安装结果。"
 fi
 
 # ---------- 5) 旧手动挂载清理（仅 --fix-profile） ----------
@@ -262,7 +272,7 @@ if [ "$FIX_PROFILE" = true ] && [ -f "$PATCH_YML" ]; then
 fi
 
 say "安装完成：$ADD_SPEC（profile: $PROFILE_NAME）"
-say "验证：dsh --profile $PROFILE_NAME --dump-config | grep -n '${PLUGIN_ID}\\|${PKG}'"
+say "验证：grep -n '${PKG}' '$PKG_JSON' 应命中 dependencies 条目与 dsh.profile.bundles 条目"
 
 if [ "$RESTART" = true ]; then
   if command -v pm2 >/dev/null 2>&1; then

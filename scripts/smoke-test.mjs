@@ -4,6 +4,11 @@
  * Run: node scripts/smoke-test.mjs
  */
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { normalizeProjectKey, isPathInsideRoots, resolveGrantsProjectKey } from '../lib/shared/path.js'
 import {
   publicAccount,
@@ -41,6 +46,17 @@ test('normalizeProjectKey', () => {
   assert.equal(key, normalizeProjectKey('/workspace/DSH-plugin'))
   assert.ok(!key.endsWith('/') && !key.endsWith('\\'), 'no trailing separator')
   assert.equal(normalizeProjectKey(''), '')
+})
+
+test('normalizeProjectKey resolves real paths idempotently', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dgf-real-'))
+  try {
+    const key = normalizeProjectKey(dir)
+    assert.equal(normalizeProjectKey(key), key, 'idempotent on its own output')
+    assert.equal(key, realpathSync(dir), 'existing paths collapse to the real path')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 })
 
 test('isPathInsideRoots handles platform separators', () => {
@@ -85,6 +101,27 @@ test('classifyGitWriteCommand', () => {
     classifyGitWriteCommand('node -e "fetch(\'http://127.0.0.1:3080/dsh-git-forge/api/health\')"').kind,
     'none',
   )
+})
+
+test('classifyGitWriteCommand quoted payloads and anchored subcommand', () => {
+  assert.equal(classifyGitWriteCommand("bash -lc 'git push origin main'").kind, 'push')
+  assert.equal(classifyGitWriteCommand('sh -c "git push origin main"').kind, 'push')
+  assert.equal(classifyGitWriteCommand('echo please git push now').kind, 'none')
+  assert.equal(classifyGitWriteCommand("git commit -m 'please push'").kind, 'none')
+  assert.equal(classifyGitWriteCommand('git -C sub push').kind, 'push')
+})
+
+test('strip-mount removes CRLF blocks and keeps EOL style', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dgf-strip-'))
+  try {
+    const file = join(dir, 'cordis.patch.yml')
+    writeFileSync(file, 'packages:\r\n- insert:\r\n    - id: git-forge\r\n      name: dsh-git-forge\r\n')
+    const stripMount = fileURLToPath(new URL('./lib/strip-mount.cjs', import.meta.url))
+    execFileSync(process.execPath, [stripMount, file, 'git-forge'])
+    assert.equal(readFileSync(file, 'utf8'), 'packages:\r\n', 'block removed, CRLF preserved')
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 })
 
 test('evaluatePushPolicy blocks wrong host when granted', () => {
@@ -164,12 +201,12 @@ test('normalizeGitHost', () => {
 
 test('normalizeApiBase gitea appends /api/v1', () => {
   assert.equal(
-    normalizeApiBase('gitea', 'https://gitea.mi.pp00.top'),
-    'https://gitea.mi.pp00.top/api/v1',
+    normalizeApiBase('gitea', 'https://gitea.example.invalid'),
+    'https://gitea.example.invalid/api/v1',
   )
   assert.equal(
-    normalizeApiBase('gitea', 'https://gitea.mi.pp00.top/api/v1'),
-    'https://gitea.mi.pp00.top/api/v1',
+    normalizeApiBase('gitea', 'https://gitea.example.invalid/api/v1'),
+    'https://gitea.example.invalid/api/v1',
   )
 })
 

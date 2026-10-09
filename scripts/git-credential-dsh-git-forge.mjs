@@ -9,7 +9,8 @@
  * Project key resolution order:
  *   1) DSH_GIT_FORGE_PROJECT (session workspace; preferred)
  *   2) exact cwd match in grants.projects
- *   3) walk parents under /workspace until a grants key matches
+ *   3) walk parents until a grants key matches (bounded to /workspace only
+ *      when cwd is under /workspace; otherwise up to the filesystem root)
  *
  * Never log password/token. Optional DSH_GIT_FORGE_HELPER_DEBUG=1 enables non-secret stderr.
  */
