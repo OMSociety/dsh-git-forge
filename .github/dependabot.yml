@@ -1,0 +1,11 @@
+version: 2
+updates:
+  # 当前零依赖（运行时与 dev 均为空），配置先就位：今后引入依赖即自动纳入月度巡检。
+  # @deepseek-ai/* 是宿主 peer，区间随宿主版本走，动 floor 要人工决策，机器人不许碰。
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: '@deepseek-ai/*'
