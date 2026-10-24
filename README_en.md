@@ -14,7 +14,7 @@
     <a href="https://github.com/OMSociety/dsh-git-forge/issues"><img src="https://img.shields.io/github/issues/OMSociety/dsh-git-forge?color=4f6ef7" alt="Issues"></a>
   </p>
 
-<a href="#what-this-is">What this is</a> • <a href="#features">Features</a> • <a href="#installation">Installation</a> • <a href="#sidebar">Sidebar</a> • <a href="#model-tool">Model tool</a> • <a href="#where-data-lives">Where data lives</a> • <a href="#security">Security</a> • <a href="#requirements">Requirements</a> • <a href="#development">Development</a> • <a href="#support-and-credits">Support and credits</a> • <a href="#license-and-author">License and author</a>
+<a href="#what-this-is">What this is</a> • <a href="#features">Features</a> • <a href="#screenshots">Screenshots</a> • <a href="#installation">Installation</a> • <a href="#sidebar">Sidebar</a> • <a href="#model-tool">Model tool</a> • <a href="#where-data-lives">Where data lives</a> • <a href="#security">Security</a> • <a href="#requirements">Requirements</a> • <a href="#development">Development</a> • <a href="#support-and-credits">Support and credits</a> • <a href="#license-and-author">License and author</a>
 </div>
 
 ## What this is
@@ -39,6 +39,19 @@ SSH remotes and the system `gh auth` are untouched and keep using your local SSH
 | **Token storage** | `$DSH_HOME/git-forge/secrets.json` (`0600`); no token is ever returned by an API or tool result |
 | **`GitForge` tool** | Four read-only actions: list accounts, list a project's granted accounts, read the policy, check whether a remote is allowed |
 | **UI parity** | Shares one sidebar interaction model with its sibling [dsh-ssh-tunnel](https://github.com/OMSociety/dsh-ssh-tunnel) |
+
+## Screenshots
+
+<table>
+<tr>
+<td width="55%" align="center"><a href="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-grants.png"><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-grants.png" alt="Sidebar per-project grants: pick the forge accounts this project may use, and whether the push guard is enforced" width="560"></a></td>
+<td width="45%" align="center"><a href="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-policy.png"><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-policy.png" alt="Sidebar policy status: the gitHosts allowed for this project and the global policy for unbound projects" width="460"></a></td>
+</tr>
+<tr>
+<td align="center">Per-project grants: choose the forge accounts this project may use, and whether to enforce the push guard</td>
+<td align="center">Policy status: the gitHosts allowed for this project, plus the global policy for unbound projects</td>
+</tr>
+</table>
 
 ## Installation
 

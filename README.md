@@ -14,7 +14,7 @@
     <a href="https://github.com/OMSociety/dsh-git-forge/issues"><img src="https://img.shields.io/github/issues/OMSociety/dsh-git-forge?color=4f6ef7" alt="Issues"></a>
   </p>
 
-<a href="#这是什么">这是什么</a> • <a href="#核心特性">核心特性</a> • <a href="#安装方式">安装方式</a> • <a href="#侧栏">侧栏</a> • <a href="#模型工具">模型工具</a> • <a href="#数据放在哪">数据放在哪</a> • <a href="#安全">安全</a> • <a href="#环境要求">环境要求</a> • <a href="#开发">开发</a> • <a href="#支持与致谢">支持与致谢</a> • <a href="#许可证与作者">许可证与作者</a>
+<a href="#这是什么">这是什么</a> • <a href="#核心特性">核心特性</a> • <a href="#效果">效果</a> • <a href="#安装方式">安装方式</a> • <a href="#侧栏">侧栏</a> • <a href="#模型工具">模型工具</a> • <a href="#数据放在哪">数据放在哪</a> • <a href="#安全">安全</a> • <a href="#环境要求">环境要求</a> • <a href="#开发">开发</a> • <a href="#支持与致谢">支持与致谢</a> • <a href="#许可证与作者">许可证与作者</a>
 </div>
 
 ## 这是什么
@@ -39,6 +39,19 @@ SSH 远程与系统 `gh auth` 不受影响，仍走本机 SSH / `gh`；本插件
 | **token 落盘** | `$DSH_HOME/git-forge/secrets.json`（`0600`）；API 与工具结果一律不回传 token |
 | **模型工具 GitForge** | 四个只读动作：看账号库、看某项目授权、看策略、校验某个 remote 是否被允许 |
 | **UI 对齐** | 与同门的 [dsh-ssh-tunnel](https://github.com/OMSociety/dsh-ssh-tunnel) 共用一套侧栏交互 |
+
+## 效果
+
+<table>
+<tr>
+<td width="55%" align="center"><a href="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-grants.png"><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-grants.png" alt="侧栏项目授权页：勾选本项目可用的 forge 账号，并决定是否启用 push 拦截" width="560"></a></td>
+<td width="45%" align="center"><a href="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-policy.png"><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-policy.png" alt="侧栏策略状态页：当前项目允许的 gitHost 与未绑定项目的全局策略" width="460"></a></td>
+</tr>
+<tr>
+<td align="center">项目授权：勾选本项目可用的 forge 账号，并决定是否启用 push 拦截</td>
+<td align="center">策略状态：当前项目允许的 gitHost，以及未绑定项目的全局策略</td>
+</tr>
+</table>
 
 ## 安装方式
 
