@@ -10,6 +10,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-11-01
+
+### 修复
+
+- **客户端样式表在插件停用后残留。** `lib/client.js` 的 `ensureStyles()` 只往 `document.head` 插 `<style id="dsh-git-forge-style">`、不交出撤销手段，`apply()` 又是裸调用，于是禁用或热替换之后宿主页面继续带着这份规则（面板已经消失，样式还在）。现在 `ensureStyles()` 返回移除该节点的 disposer，`apply()` 经 `ctx.effect` 收下，随插件生命周期一起撤销。
+
+### Fixed
+
+- **The client stylesheet survived a disabled plugin.** `ensureStyles()` in `lib/client.js` only inserted `<style id="dsh-git-forge-style">` into `document.head` and handed back no way to undo it, and `apply()` called it bare, so the host page kept the rules after a disable or a hot swap (panel gone, styles still there). `ensureStyles()` now returns a disposer that removes the node, and `apply()` takes it through `ctx.effect` so it is dropped with the plugin.
+
 ## [1.2.0] - 2026-10-09
 
 ### 新增
