@@ -123,7 +123,7 @@ dsh plugin --profile <profile> add "dsh-git-forge"
 
 ## 环境要求
 
-- DSH profile（desktop 与服务器自建均可），DSH 版本 `>=0.2.0-rc.2 <0.3.0-0`
+- DSH profile（desktop 与服务器自建均可），DSH 版本 `>=0.2.0-rc.2 <0.2.1-0 || >=0.2.1-rc.1 <0.3.0-0`
 - Node.js `>= 20`
 
 ## 开发
