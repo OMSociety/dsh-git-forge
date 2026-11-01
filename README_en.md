@@ -123,7 +123,7 @@ Under `$DSH_HOME/git-forge/` (directory mode `0700`; `0600`/`0700` modes apply o
 
 ## Requirements
 
-- A DSH profile (desktop and self-hosted servers both work) with DSH `>=0.2.0-rc.2 <0.3.0-0`
+- A DSH profile (desktop and self-hosted servers both work) with DSH `>=0.2.0-rc.2 <0.2.1-0 || >=0.2.1-rc.1 <0.3.0-0`
 - Node.js `>= 20`
 
 ## Development
