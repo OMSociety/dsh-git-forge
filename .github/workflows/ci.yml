@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: 冒烟测试
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v7
+
+      - name: 准备 Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # 零运行时依赖：测试只引用 Node 内置模块与本仓源码，因此没有安装步骤。
+      - name: 语法检查
+        run: |
+          set -euo pipefail
+          find lib scripts -type f \( -name '*.js' -o -name '*.cjs' -o -name '*.mjs' \) -print0 \
+            | xargs -0 -n1 node --check
+
+      - name: 冒烟测试
+        run: npm test
