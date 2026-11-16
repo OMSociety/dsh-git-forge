@@ -8,7 +8,7 @@
 
   <p>
     <a href="https://www.npmjs.com/package/dsh-git-forge"><img src="https://img.shields.io/npm/v/dsh-git-forge?label=version&color=4f6ef7" alt="Version"></a>
-    <a href="https://github.com/deepseek-ai/dsh"><img src="https://img.shields.io/badge/DSH-%3E%3D0.2.0--rc.2_%3C0.3.0--0-4f6ef7" alt="DSH"></a>
+    <a href="https://github.com/deepseek-ai/dsh"><img src="https://img.shields.io/badge/DSH-DeepSeek%20Harness-4D6BFE" alt="DSH"></a>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/OMSociety/dsh-git-forge?color=4f6ef7" alt="License"></a>
     <a href="https://github.com/OMSociety/dsh-git-forge/stargazers"><img src="https://img.shields.io/github/stars/OMSociety/dsh-git-forge?color=4f6ef7" alt="Stars"></a>
     <a href="https://github.com/OMSociety/dsh-git-forge/issues"><img src="https://img.shields.io/github/issues/OMSociety/dsh-git-forge?color=4f6ef7" alt="Issues"></a>
@@ -123,7 +123,7 @@ dsh plugin --profile <profile> add "dsh-git-forge"
 
 ## 环境要求
 
-- DSH profile（desktop 与服务器自建均可），DSH 版本 `>=0.2.0-rc.2 <0.2.1-0 || >=0.2.1-rc.1 <0.3.0-0`
+- DSH profile（desktop 与服务器自建均可）；插件不声明 DSH 版本要求，装进哪个宿主就在哪个宿主上跑
 - Node.js `>= 20`
 
 ## 开发
