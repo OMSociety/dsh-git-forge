@@ -10,14 +10,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.3] - 2026-11-22
 
 ### 修复
 
+- **侧栏 API 缺少宿主访问检查。** `/dsh-git-forge/api` 在解析 URL、读取正文、访问账号或授权数据及业务分派之前调用 `connection.requestRejection`；`401` / `403` 按原状态码结束响应，仅 `undefined` 继续处理。
 - **右侧栏页签的图标比文字高一两个像素。** 标题席位的内容由宿主放进 chip 自己的 flex 行（`.tabTitle` 为 `display: contents`）；此前标题把 `svg` 与文字一起包在普通行内 `<span>` 里，图标按文本基线对齐。现在标题自带 `inline-flex` 容器并以 `align-items: center` 居中，图标与文字的间距由 `gap` 提供。
 
 ### Fixed
 
+- **The sidebar API lacked the host access check.** `/dsh-git-forge/api` calls `connection.requestRejection` before parsing the URL, reading the body, accessing account or grant data, or dispatching business logic; `401` and `403` end the response with the original status, and only `undefined` continues processing.
 - **The sidebar tab's icon sat a pixel or two above its label.** The host mounts a title seat into the chip's own flex row (`.tabTitle` is `display: contents`); the title wrapped the svg and its label in a plain inline `<span>`, so the icon aligned on the text baseline. The title now carries an `inline-flex` wrapper centred with `align-items: center`, and the icon-to-label spacing comes from `gap`.
 
 ## [1.2.2] - 2026-11-02

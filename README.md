@@ -59,7 +59,7 @@ SSH 远程与系统 `gh auth` 不受影响，仍走本机 SSH / `gh`；本插件
 
 ```powershell
 # 先停掉正在运行的 DSH（运行中的服务会锁住依赖，装完再起）
-dsh plugin --profile <profile> add "dsh-git-forge"
+dsh plugin --profile <profile> add "dsh-git-forge@1.2.3"
 ```
 
 > **提示**：装好后**刷新一下浏览器页面**，「Git 凭据」从右侧栏的引导页打开——只重启宿主不够，客户端产物是页面加载时取的。
@@ -117,7 +117,7 @@ dsh plugin --profile <profile> add "dsh-git-forge"
 - push 策略在 Host `tools.guard` 中硬拦截，不依赖模型自觉
 - 未给项目配置任何授权时，push 拦截器默认**不**拦截（便于渐进启用），helper 也不会凭空给出凭据
 - token 只落在宿主侧数据目录 `secrets.json`；helper 是由 git 拉起的独立进程，按需读取；token 不进模型上下文。`secrets.json` 疑似泄露请立即轮换 token
-- 侧栏 API 做同源校验：`Sec-Fetch-Site: cross-site` 一律拒绝；请求缺该头时校验 `Origin` 与 `Host` 是否一致，不一致拒绝；两者皆缺的非浏览器客户端放行（宽松策略）
+- 侧栏 API 在解析 URL、读取正文、访问账号或授权数据及业务分派之前调用宿主 `connection.requestRejection`；`401` / `403` 按原状态码结束响应，仅 `undefined` 继续处理
 - push 检测基于命令文本启发式，已知绕过面（env 变量改名 git、git alias、路径经变量拼接、非 bash/sh 包装器、`time`/`nice` 等未覆盖前缀）；这一边界是明示的检测口径，不是放行依据
 - 配置了授权的项目里，裸 `git push` 的 remote 解析失败会重试一次，仍失败即拒绝（fail-closed）
 
@@ -129,7 +129,7 @@ dsh plugin --profile <profile> add "dsh-git-forge"
 ## 开发
 
 ```powershell
-npm test                      # 21 项离线自检（scripts/smoke-test.mjs）
+npm test                      # 24 项离线自检（scripts/smoke-test.mjs）
 npm run check                 # 语法 + 自检
 DSH_PROFILE=desktop bash scripts/sync-to-dsh.sh   # 以 link: 方式把本仓库接入 DSH profile（开发用）
 ```

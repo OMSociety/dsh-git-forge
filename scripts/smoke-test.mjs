@@ -25,20 +25,15 @@ import {
 } from '../lib/shared/git-policy.js'
 import { selectTokenAccountForHost } from '../lib/shared/credential-select.js'
 import { guessPushRemoteName } from '../lib/shared/remote-resolve.js'
+import { createApiHandler, inject } from '../lib/index.js'
 import {
   parseCredentialInput,
   resolveHelperProjectKey,
 } from './git-credential-dsh-git-forge.mjs'
 
-let failed = 0
+const tests = []
 function test(name, fn) {
-  try {
-    fn()
-    console.log('ok  ', name)
-  } catch (e) {
-    failed++
-    console.error('FAIL', name, e && e.message ? e.message : e)
-  }
+  tests.push({ name, fn })
 }
 
 test('normalizeProjectKey', () => {
@@ -285,8 +280,109 @@ test('guessPushRemoteName', () => {
   assert.equal(guessPushRemoteName('git push --force-with-lease upstream HEAD'), 'upstream')
 })
 
+function createOfflineRequest(events) {
+  return {
+    method: 'POST',
+    get url() {
+      events.push('url')
+      return '/dsh-git-forge/api/listAccounts'
+    },
+    async *[Symbol.asyncIterator]() {
+      events.push('body')
+      yield Buffer.from('{"offline":true}')
+    },
+  }
+}
+
+function createOfflineResponse(events) {
+  return {
+    statusCode: 200,
+    headers: {},
+    setHeader(name, value) {
+      this.headers[name] = value
+    },
+    end(body = '') {
+      events.push('end')
+      this.body = body
+      this.ended = true
+    },
+  }
+}
+
+async function assertRejectedApiRequest(status) {
+  const events = []
+  const req = createOfflineRequest(events)
+  const res = createOfflineResponse(events)
+  let dispatchCalls = 0
+  const ctx = {
+    connection: {
+      requestRejection(request) {
+        assert.equal(request, req)
+        events.push('authorize')
+        return status
+      },
+    },
+  }
+  const handler = createApiHandler(ctx, async () => {
+    dispatchCalls++
+    throw new Error('rejected request reached dispatch')
+  })
+  await handler(req, res)
+  assert.equal(res.statusCode, status)
+  assert.equal(res.ended, true)
+  assert.equal(res.body, '')
+  assert.equal(dispatchCalls, 0)
+  assert.deepEqual(events, ['authorize', 'end'])
+}
+
+test('API handler returns 401 before URL, body, or dispatch access', async () => {
+  assert.ok(inject.includes('connection'))
+  await assertRejectedApiRequest(401)
+})
+
+test('API handler returns 403 before URL, body, or dispatch access', async () => {
+  await assertRejectedApiRequest(403)
+})
+
+test('API handler continues only after access check allows request', async () => {
+  const events = []
+  const req = createOfflineRequest(events)
+  const res = createOfflineResponse(events)
+  const ctx = {
+    connection: {
+      requestRejection(request) {
+        assert.equal(request, req)
+        events.push('authorize')
+        return undefined
+      },
+    },
+  }
+  const handler = createApiHandler(ctx, async (method, body, dispatchCtx) => {
+    events.push('dispatch')
+    assert.equal(method, 'listAccounts')
+    assert.deepEqual(body, { offline: true })
+    assert.equal(dispatchCtx, ctx)
+    return { ok: true, offline: true }
+  })
+  await handler(req, res)
+  assert.equal(res.statusCode, 200)
+  assert.deepEqual(JSON.parse(res.body), { ok: true, offline: true })
+  assert.deepEqual(events, ['authorize', 'url', 'body', 'dispatch', 'end'])
+})
+
+let failed = 0
+for (const { name, fn } of tests) {
+  try {
+    await fn()
+    console.log('ok  ', name)
+  } catch (e) {
+    failed++
+    console.error('FAIL', name, e && e.stack ? e.stack : e)
+  }
+}
+
 if (failed) {
   console.error(`\n${failed} failed`)
   process.exit(1)
 }
-console.log('\nall passed')
+console.log(`\n${tests.length} tests passed`)

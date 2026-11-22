@@ -59,7 +59,7 @@ SSH remotes and the system `gh auth` are untouched and keep using your local SSH
 
 ```powershell
 # stop the running DSH first (a live service holds the dependency lock; start it again afterwards)
-dsh plugin --profile <profile> add "dsh-git-forge"
+dsh plugin --profile <profile> add "dsh-git-forge@1.2.3"
 ```
 
 > **Note**: After installing, **refresh the browser page**; the "Git Credentials" tab is opened from the right sidebar's guide page — restarting the host alone is not enough, because the client artifact is fetched when the page loads.
@@ -117,7 +117,7 @@ Under `$DSH_HOME/git-forge/` (directory mode `0700`; `0600`/`0700` modes apply o
 - Push policy is enforced in the host's `tools.guard`, not left to the model
 - With no grants configured for a project, the push guard does **not** block by default (progressive enablement), and the helper supplies no credentials either
 - Tokens live only in the host-side data file `secrets.json`; the helper is a separate process spawned by git and reads it on demand; tokens never enter model context. Rotate tokens immediately if `secrets.json` may have leaked
-- The sidebar API enforces same-origin checks: `Sec-Fetch-Site: cross-site` is always rejected; when that header is absent, `Origin` must match the `Host` header or the request is rejected; non-browser clients carrying neither are allowed (lenient policy)
+- The sidebar API calls the host's `connection.requestRejection` before parsing the URL, reading the body, accessing account or grant data, or dispatching business logic; `401` and `403` end the response with the original status, and only `undefined` continues processing
 - Push detection is a text-heuristic and has a known bypass surface (git renamed via an env var, git aliases, paths assembled through variables, non-bash/sh wrappers, uncovered prefixes like `time`/`nice`); this boundary states the detection scope, it is not an endorsement
 - In a project with grants, a bare `git push` whose remote cannot be resolved is retried once, then rejected (fail-closed)
 
@@ -129,7 +129,7 @@ Under `$DSH_HOME/git-forge/` (directory mode `0700`; `0600`/`0700` modes apply o
 ## Development
 
 ```powershell
-npm test                      # 21 offline checks (scripts/smoke-test.mjs)
+npm test                      # 24 offline checks (scripts/smoke-test.mjs)
 npm run check                 # syntax + smoke tests
 DSH_PROFILE=desktop bash scripts/sync-to-dsh.sh   # register this checkout into a DSH profile as link: (dev)
 ```
