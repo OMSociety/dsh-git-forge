@@ -138,7 +138,6 @@ cordis.patch.yml        In-package bundle patch the CLI turns into dsh.profile.b
 
 - If this plugin helps you, a Star is welcome; questions and suggestions go to [Issues](https://github.com/OMSociety/dsh-git-forge/issues) or [Pull Requests](https://github.com/OMSociety/dsh-git-forge/pulls).
 - Changes are recorded in the [CHANGELOG](CHANGELOG.md).
-- [dsh-ssh-tunnel](https://github.com/OMSociety/dsh-ssh-tunnel): sibling plugin sharing the same sidebar interaction model
 - [DeepSeek Harness](https://github.com/deepseek-ai/dsh): the host for plugins, tools and agent shells
 
 ## License and author

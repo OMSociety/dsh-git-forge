@@ -138,7 +138,6 @@ cordis.patch.yml        包内 bundle patch，CLI 据此写入 dsh.profile.bundl
 
 - 如果这个插件对你有帮助，欢迎点亮 Star；有问题或建议请提 [Issue](https://github.com/OMSociety/dsh-git-forge/issues) 或 [Pull Request](https://github.com/OMSociety/dsh-git-forge/pulls)。
 - 变更记录见 [CHANGELOG](CHANGELOG.md)。
-- [dsh-ssh-tunnel](https://github.com/OMSociety/dsh-ssh-tunnel)：同门插件，主机库与侧栏交互与本案对齐
 - [DeepSeek Harness](https://github.com/deepseek-ai/dsh)：插件、工具与 agent shell 的宿主
 
 ## 许可证与作者
