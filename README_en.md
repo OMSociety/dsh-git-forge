@@ -129,7 +129,7 @@ Under `$DSH_HOME/git-forge/` (directory mode `0700`; `0600`/`0700` modes apply o
 ## Development
 
 ```powershell
-npm test                      # 24 offline checks (scripts/smoke-test.mjs)
+npm test                      # 27 offline checks (scripts/smoke-test.mjs)
 npm run check                 # syntax + smoke tests
 DSH_PROFILE=desktop bash scripts/sync-to-dsh.sh   # register this checkout into a DSH profile as link: (dev)
 ```

@@ -129,7 +129,7 @@ dsh plugin --profile <profile> add "dsh-git-forge@1.2.4"
 ## 开发
 
 ```powershell
-npm test                      # 24 项离线自检（scripts/smoke-test.mjs）
+npm test                      # 27 项离线自检（scripts/smoke-test.mjs）
 npm run check                 # 语法 + 自检
 DSH_PROFILE=desktop bash scripts/sync-to-dsh.sh   # 以 link: 方式把本仓库接入 DSH profile（开发用）
 ```
