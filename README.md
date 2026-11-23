@@ -117,7 +117,7 @@ dsh plugin --profile <profile> add "dsh-git-forge@1.2.3"
 - push 策略在 Host `tools.guard` 中硬拦截，不依赖模型自觉
 - 未给项目配置任何授权时，push 拦截器默认**不**拦截（便于渐进启用），helper 也不会凭空给出凭据
 - token 只落在宿主侧数据目录 `secrets.json`；helper 是由 git 拉起的独立进程，按需读取；token 不进模型上下文。`secrets.json` 疑似泄露请立即轮换 token
-- 侧栏 API 在解析 URL、读取正文、访问账号或授权数据及业务分派之前调用宿主 `connection.requestRejection`；`401` / `403` 按原状态码结束响应，仅 `undefined` 继续处理
+- 侧栏 API 在解析 URL、读取正文、访问账号或授权数据及业务分派之前完成宿主准入校验。旧宿主（`@deepseek-ai/dsh-client-connection` <= 0.2.2-rc.5）仍调用 `connection.requestRejection`，`401` / `403` 按原状态码结束响应；新宿主（>= 0.2.3-alpha.1）已由 WebServer 完成准入，handler 复用传入的 Peer 并要求 `principal.kind === 'owner'`，无 Peer 或非 owner 一律 403
 - push 检测基于命令文本启发式，已知绕过面（env 变量改名 git、git alias、路径经变量拼接、非 bash/sh 包装器、`time`/`nice` 等未覆盖前缀）；这一边界是明示的检测口径，不是放行依据
 - 配置了授权的项目里，裸 `git push` 的 remote 解析失败会重试一次，仍失败即拒绝（fail-closed）
 

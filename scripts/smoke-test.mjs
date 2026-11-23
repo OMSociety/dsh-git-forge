@@ -370,6 +370,60 @@ test('API handler continues only after access check allows request', async () =>
   assert.deepEqual(events, ['authorize', 'url', 'body', 'dispatch', 'end'])
 })
 
+function fakePeer(kind) {
+  return { principal: { kind } }
+}
+
+test('API handler continues on new host when an owner peer is passed', async () => {
+  const events = []
+  const req = createOfflineRequest(events)
+  const res = createOfflineResponse(events)
+  const ctx = { connection: {} }
+  const handler = createApiHandler(ctx, async (method, body, dispatchCtx) => {
+    events.push('dispatch')
+    assert.equal(method, 'listAccounts')
+    assert.deepEqual(body, { offline: true })
+    assert.equal(dispatchCtx, ctx)
+    return { ok: true, offline: true }
+  })
+  await handler(req, res, fakePeer('owner'))
+  assert.equal(res.statusCode, 200)
+  assert.deepEqual(JSON.parse(res.body), { ok: true, offline: true })
+  assert.deepEqual(events, ['url', 'body', 'dispatch', 'end'])
+})
+
+test('API handler answers 403 on new host for a non-owner peer before URL or body', async () => {
+  const events = []
+  const req = createOfflineRequest(events)
+  const res = createOfflineResponse(events)
+  let dispatchCalls = 0
+  const handler = createApiHandler({ connection: {} }, async () => {
+    dispatchCalls++
+    throw new Error('non-owner peer reached dispatch')
+  })
+  await handler(req, res, fakePeer('anonymous'))
+  assert.equal(res.statusCode, 403)
+  assert.equal(res.ended, true)
+  assert.equal(JSON.parse(res.body).ok, false)
+  assert.equal(dispatchCalls, 0)
+  assert.deepEqual(events, ['end'])
+})
+
+test('API handler answers 403 on new host when no peer is passed', async () => {
+  const events = []
+  const req = createOfflineRequest(events)
+  const res = createOfflineResponse(events)
+  let dispatchCalls = 0
+  const handler = createApiHandler({ connection: {} }, async () => {
+    dispatchCalls++
+  })
+  await handler(req, res)
+  assert.equal(res.statusCode, 403)
+  assert.equal(JSON.parse(res.body).ok, false)
+  assert.equal(dispatchCalls, 0)
+  assert.deepEqual(events, ['end'])
+})
+
 let failed = 0
 for (const { name, fn } of tests) {
   try {

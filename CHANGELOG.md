@@ -10,6 +10,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 修复
+
+- **DSH 0.2.3-alpha.1+ 上侧栏 API 一律返回 `HTTP 400`。** `connection.requestRejection` 在新版宿主已移除（0.2.2-rc.2 ~ rc.5 仍保留兼容层，0.2.3-alpha.1 起移除），`createApiHandler()` 第一行调用它会抛 `TypeError`，被 WebServer 的兜底映射成 400 且不带 body。现在旧宿主沿用原检查，新宿主复用 WebServer 传入的 Peer 并要求 owner。
+
+### Fixed
+
+- **The sidebar API answered `HTTP 400` on DSH 0.2.3-alpha.1+.** `connection.requestRejection` is gone from newer hosts (0.2.2-rc.2 ~ rc.5 still carried a compatibility layer; it was removed in 0.2.3-alpha.1), so the first line of `createApiHandler()` threw a `TypeError` that the WebServer mapped to a body-less 400. Older hosts keep the original check; newer hosts consume the Peer passed by the WebServer and require owner.
+
 ## [1.2.3] - 2026-11-22
 
 ### 修复

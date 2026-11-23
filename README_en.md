@@ -117,7 +117,7 @@ Under `$DSH_HOME/git-forge/` (directory mode `0700`; `0600`/`0700` modes apply o
 - Push policy is enforced in the host's `tools.guard`, not left to the model
 - With no grants configured for a project, the push guard does **not** block by default (progressive enablement), and the helper supplies no credentials either
 - Tokens live only in the host-side data file `secrets.json`; the helper is a separate process spawned by git and reads it on demand; tokens never enter model context. Rotate tokens immediately if `secrets.json` may have leaked
-- The sidebar API calls the host's `connection.requestRejection` before parsing the URL, reading the body, accessing account or grant data, or dispatching business logic; `401` and `403` end the response with the original status, and only `undefined` continues processing
+- The sidebar API completes host admission before parsing the URL, reading the body, accessing account or grant data, or dispatching business logic. On older hosts (`@deepseek-ai/dsh-client-connection` <= 0.2.2-rc.5) it still calls `connection.requestRejection`, and `401` / `403` end the response with the original status; on newer hosts (>= 0.2.3-alpha.1) the WebServer has already admitted the request, so the handler consumes the passed Peer and requires `principal.kind === 'owner'`, answering 403 for a missing or non-owner peer
 - Push detection is a text-heuristic and has a known bypass surface (git renamed via an env var, git aliases, paths assembled through variables, non-bash/sh wrappers, uncovered prefixes like `time`/`nice`); this boundary states the detection scope, it is not an endorsement
 - In a project with grants, a bare `git push` whose remote cannot be resolved is retried once, then rejected (fail-closed)
 
