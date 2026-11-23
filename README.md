@@ -14,7 +14,7 @@
     <a href="https://github.com/OMSociety/dsh-git-forge/issues"><img src="https://img.shields.io/github/issues/OMSociety/dsh-git-forge?color=4f6ef7" alt="Issues"></a>
   </p>
 
-<a href="#这是什么">这是什么</a> • <a href="#核心特性">核心特性</a> • <a href="#效果">效果</a> • <a href="#安装方式">安装方式</a> • <a href="#侧栏">侧栏</a> • <a href="#模型工具">模型工具</a> • <a href="#数据放在哪">数据放在哪</a> • <a href="#安全">安全</a> • <a href="#环境要求">环境要求</a> • <a href="#开发">开发</a> • <a href="#支持与致谢">支持与致谢</a> • <a href="#许可证与作者">许可证与作者</a>
+<a href="#这是什么">这是什么</a> • <a href="#效果">效果</a> • <a href="#安装方式">安装方式</a> • <a href="#侧栏">侧栏</a> • <a href="#模型工具">模型工具</a> • <a href="#数据放在哪">数据放在哪</a> • <a href="#安全">安全</a> • <a href="#环境要求">环境要求</a> • <a href="#开发">开发</a> • <a href="#支持与致谢">支持与致谢</a> • <a href="#许可证与作者">许可证与作者</a>
 </div>
 
 ## 这是什么
@@ -28,24 +28,12 @@
 
 SSH 远程与系统 `gh auth` 不受影响，仍走本机 SSH / `gh`；本插件只补 **DSH agent shell 下的 HTTPS** 这一段。
 
-## 核心特性
-
-| 特性 | 说明 |
-|---|---|
-| **账号库** | 账号按 `gitHost` 归集，界面给出 `github.com` / `gitee.com` / `gitlab.com` / `bitbucket.org` 常用选项，自建 Forge 直接填自己的域名；侧栏内可增删改并探测 API token |
-| **按项目授权** | 授权 key 是 **DSH 会话工作区**（`projectPathKey`，agent shell 里即 `DSH_GIT_FORGE_PROJECT`），**不是**子仓路径 |
-| **push 拦截** | 命令里的 URL、裸 `git push`、`git remote add` / `set-url` 都在 Host `tools.guard` 里按授权判定 |
-| **agent HTTPS git** | 同一 host 恰好 **1** 个已授权 token 账号时（R1）helper 才自动注入；多账号时不猜号，宁可不注入 |
-| **token 落盘** | `$DSH_HOME/git-forge/secrets.json`（`0600`）；API 与工具结果一律不回传 token |
-| **模型工具 GitForge** | 四个只读动作：看账号库、看某项目授权、看策略、校验某个 remote 是否被允许 |
-| **UI 对齐** | 与同门的 [dsh-ssh-tunnel](https://github.com/OMSociety/dsh-ssh-tunnel) 共用一套侧栏交互 |
-
 ## 效果
 
 <table>
 <tr>
-<td width="55%" align="center"><a href="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-grants.png"><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-grants.png" alt="侧栏项目授权页：勾选本项目可用的 forge 账号，并决定是否启用 push 拦截" width="560"></a></td>
-<td width="45%" align="center"><a href="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-policy.png"><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-policy.png" alt="侧栏策略状态页：当前项目允许的 gitHost 与未绑定项目的全局策略" width="460"></a></td>
+<td width="50%" align="center"><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-grants.png" alt="侧栏项目授权页：勾选本项目可用的 forge 账号，并决定是否启用 push 拦截" width="400"></td>
+<td width="50%" align="center"><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-policy.png" alt="侧栏策略状态页：当前项目允许的 gitHost 与未绑定项目的全局策略" width="400"></td>
 </tr>
 <tr>
 <td align="center">项目授权：勾选本项目可用的 forge 账号，并决定是否启用 push 拦截</td>
@@ -79,7 +67,7 @@ dsh plugin --profile <profile> add "dsh-git-forge@1.2.4"
 | 页面 | 作用 |
 |---|---|
 | **项目授权** | 当前项目可用的账号，以及是否 `enforcePush` |
-| **账号库** | 账号增删改、探测 API token、查看绑定的 `gitHost` |
+| **账号库** | 账号增删改、探测 API token；账号按 `gitHost` 归集，界面给出 `github.com` / `gitee.com` / `gitlab.com` / `bitbucket.org` 常用选项，自建 Forge 直接填自己的域名 |
 | **策略状态** | 当前允许的 `gitHost`，以及未绑定项目的默认策略 |
 
 ## 模型工具
@@ -114,7 +102,7 @@ dsh plugin --profile <profile> add "dsh-git-forge@1.2.4"
 ## 安全
 
 - token 不出现在 API 结果、工具结果与模型上下文里
-- push 策略在 Host `tools.guard` 中硬拦截，不依赖模型自觉
+- push 策略在 Host `tools.guard` 中硬拦截，不依赖模型自觉：命令里的 URL、裸 `git push`、`git remote add` / `set-url` 都按授权判定
 - 未给项目配置任何授权时，push 拦截器默认**不**拦截（便于渐进启用），helper 也不会凭空给出凭据
 - token 只落在宿主侧数据目录 `secrets.json`；helper 是由 git 拉起的独立进程，按需读取；token 不进模型上下文。`secrets.json` 疑似泄露请立即轮换 token
 - 侧栏 API 在解析 URL、读取正文、访问账号或授权数据及业务分派之前完成宿主准入校验。旧宿主（`@deepseek-ai/dsh-client-connection` <= 0.2.2-rc.5）仍调用 `connection.requestRejection`，`401` / `403` 按原状态码结束响应；新宿主（>= 0.2.3-alpha.1）已由 WebServer 完成准入，handler 复用传入的 Peer 并要求 `principal.kind === 'owner'`，无 Peer 或非 owner 一律 403
@@ -131,6 +119,7 @@ dsh plugin --profile <profile> add "dsh-git-forge@1.2.4"
 ```powershell
 npm test                      # 27 项离线自检（scripts/smoke-test.mjs）
 npm run check                 # 语法 + 自检
+npm run build:preview          # 重出 docs/ 下的侧栏预览图（需本机 Chrome，CHROME_PATH 可指定）
 DSH_PROFILE=desktop bash scripts/sync-to-dsh.sh   # 以 link: 方式把本仓库接入 DSH profile（开发用）
 ```
 
@@ -140,6 +129,7 @@ DSH_PROFILE=desktop bash scripts/sync-to-dsh.sh   # 以 link: 方式把本仓库
 lib/index.js            宿主入口：工具注册、/dsh-git-forge/api 路由、push 拦截、credential helper 配置
 lib/client.js           客户端 bundle（已入库；dsh plugin add 不做构建）
 lib/shared/             宿主与客户端共用纯函数：path / git-policy / remote-resolve / credential-select / account-summary
+docs/preview/           预览输入：fixture.json 为虚构数据，panel.html 与 docs/panel-*.png 由 build:preview 生成
 scripts/                install.sh · install.ps1 · sync-to-dsh.sh · smoke-test.mjs · git-credential helper
 cordis.patch.yml        包内 bundle patch，CLI 据此写入 dsh.profile.bundles
 ```

@@ -1,0 +1,33 @@
+{
+  "sessionId": "preview",
+  "projectPathKey": "/home/dev/workspace",
+  "accounts": [
+    {
+      "id": "github-main",
+      "name": "GitHub",
+      "provider": "github",
+      "gitHost": "github.com",
+      "apiBase": "https://api.github.com",
+      "credentialStatus": "saved"
+    },
+    {
+      "id": "gitee-team",
+      "name": "Gitee",
+      "provider": "gitee",
+      "gitHost": "gitee.com",
+      "apiBase": "https://gitee.com/api/v5",
+      "credentialStatus": "saved"
+    },
+    {
+      "id": "gitea-lab",
+      "name": "实验室 Gitea",
+      "provider": "gitea",
+      "gitHost": "git.example.org",
+      "apiBase": "https://git.example.org/api/v1",
+      "credentialStatus": "missing"
+    }
+  ],
+  "granted": ["github-main", "gitee-team"],
+  "enforcePush": true,
+  "unboundPolicy": "allow"
+}

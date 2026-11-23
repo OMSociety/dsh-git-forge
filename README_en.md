@@ -14,7 +14,7 @@
     <a href="https://github.com/OMSociety/dsh-git-forge/issues"><img src="https://img.shields.io/github/issues/OMSociety/dsh-git-forge?color=4f6ef7" alt="Issues"></a>
   </p>
 
-<a href="#what-this-is">What this is</a> • <a href="#features">Features</a> • <a href="#screenshots">Screenshots</a> • <a href="#installation">Installation</a> • <a href="#sidebar">Sidebar</a> • <a href="#model-tool">Model tool</a> • <a href="#where-data-lives">Where data lives</a> • <a href="#security">Security</a> • <a href="#requirements">Requirements</a> • <a href="#development">Development</a> • <a href="#support-and-credits">Support and credits</a> • <a href="#license-and-author">License and author</a>
+<a href="#what-this-is">What this is</a> • <a href="#screenshots">Screenshots</a> • <a href="#installation">Installation</a> • <a href="#sidebar">Sidebar</a> • <a href="#model-tool">Model tool</a> • <a href="#where-data-lives">Where data lives</a> • <a href="#security">Security</a> • <a href="#requirements">Requirements</a> • <a href="#development">Development</a> • <a href="#support-and-credits">Support and credits</a> • <a href="#license-and-author">License and author</a>
 </div>
 
 ## What this is
@@ -28,24 +28,12 @@ It governs two things:
 
 SSH remotes and the system `gh auth` are untouched and keep using your local SSH / `gh`. This plugin only covers **HTTPS in DSH agent shells**.
 
-## Features
-
-| Feature | Description |
-|---|---|
-| **Account library** | Accounts are keyed by `gitHost`; the UI suggests `github.com` / `gitee.com` / `gitlab.com` / `bitbucket.org`, and self-hosted forges take their own domain. Create, edit, delete and probe an API token from the sidebar |
-| **Per-project grants** | The grant key is the **DSH session workspace** (`projectPathKey`, exposed to agent shells as `DSH_GIT_FORGE_PROJECT`), **not** a nested package path |
-| **Push guard** | URLs in the command, bare `git push`, and `git remote add` / `set-url` are all decided in the host's `tools.guard` |
-| **Agent HTTPS git** | Credentials are auto-filled only when exactly **one** token account is granted for that host (R1); with several, it declines to guess |
-| **Token storage** | `$DSH_HOME/git-forge/secrets.json` (`0600`); no token is ever returned by an API or tool result |
-| **`GitForge` tool** | Four read-only actions: list accounts, list a project's granted accounts, read the policy, check whether a remote is allowed |
-| **UI parity** | Shares one sidebar interaction model with its sibling [dsh-ssh-tunnel](https://github.com/OMSociety/dsh-ssh-tunnel) |
-
 ## Screenshots
 
 <table>
 <tr>
-<td width="55%" align="center"><a href="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-grants.png"><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-grants.png" alt="Sidebar per-project grants: pick the forge accounts this project may use, and whether the push guard is enforced" width="560"></a></td>
-<td width="45%" align="center"><a href="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-policy.png"><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-policy.png" alt="Sidebar policy status: the gitHosts allowed for this project and the global policy for unbound projects" width="460"></a></td>
+<td width="50%" align="center"><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-grants.png" alt="Sidebar per-project grants: pick the forge accounts this project may use, and whether the push guard is enforced" width="400"></td>
+<td width="50%" align="center"><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/panel-policy.png" alt="Sidebar policy status: the gitHosts allowed for this project and the global policy for unbound projects" width="400"></td>
 </tr>
 <tr>
 <td align="center">Per-project grants: choose the forge accounts this project may use, and whether to enforce the push guard</td>
@@ -79,7 +67,7 @@ One sidebar tab with three pages:
 | Page | Purpose |
 |---|---|
 | **Project access** | Accounts available to the current project, and whether `enforcePush` is on |
-| **Accounts** | Create, edit, delete accounts, probe an API token, inspect the bound `gitHost` |
+| **Accounts** | Create, edit, delete accounts and probe an API token; accounts are keyed by `gitHost`, the UI suggests `github.com` / `gitee.com` / `gitlab.com` / `bitbucket.org`, and self-hosted forges take their own domain |
 | **Policy** | Allowed `gitHost` values and the default for unbound projects |
 
 ## Model tool
@@ -114,7 +102,7 @@ Under `$DSH_HOME/git-forge/` (directory mode `0700`; `0600`/`0700` modes apply o
 ## Security
 
 - Tokens never appear in API results, tool results or model context
-- Push policy is enforced in the host's `tools.guard`, not left to the model
+- Push policy is enforced in the host's `tools.guard`, not left to the model: URLs in the command, bare `git push`, and `git remote add` / `set-url` are all decided against the grants
 - With no grants configured for a project, the push guard does **not** block by default (progressive enablement), and the helper supplies no credentials either
 - Tokens live only in the host-side data file `secrets.json`; the helper is a separate process spawned by git and reads it on demand; tokens never enter model context. Rotate tokens immediately if `secrets.json` may have leaked
 - The sidebar API completes host admission before parsing the URL, reading the body, accessing account or grant data, or dispatching business logic. On older hosts (`@deepseek-ai/dsh-client-connection` <= 0.2.2-rc.5) it still calls `connection.requestRejection`, and `401` / `403` end the response with the original status; on newer hosts (>= 0.2.3-alpha.1) the WebServer has already admitted the request, so the handler consumes the passed Peer and requires `principal.kind === 'owner'`, answering 403 for a missing or non-owner peer
@@ -131,6 +119,7 @@ Under `$DSH_HOME/git-forge/` (directory mode `0700`; `0600`/`0700` modes apply o
 ```powershell
 npm test                      # 27 offline checks (scripts/smoke-test.mjs)
 npm run check                 # syntax + smoke tests
+npm run build:preview          # regenerate the sidebar preview images under docs/ (needs local Chrome; CHROME_PATH overrides)
 DSH_PROFILE=desktop bash scripts/sync-to-dsh.sh   # register this checkout into a DSH profile as link: (dev)
 ```
 
@@ -140,6 +129,7 @@ Layout and where to change what:
 lib/index.js            Host entry: tool registration, /dsh-git-forge/api routes, push guard, credential helper config
 lib/client.js           Client bundle (committed; dsh plugin add does not build)
 lib/shared/             Pure functions shared by host and client: path / git-policy / remote-resolve / credential-select / account-summary
+docs/preview/           Preview input: fixture.json is fictional data; panel.html and docs/panel-*.png are generated by build:preview
 scripts/                install.sh · install.ps1 · sync-to-dsh.sh · smoke-test.mjs · git-credential helper
 cordis.patch.yml        In-package bundle patch the CLI turns into dsh.profile.bundles
 ```

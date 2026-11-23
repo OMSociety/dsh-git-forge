@@ -13,6 +13,7 @@ DSH 插件：Forge 账号库、按项目授权、push 拦截，并让 agent shel
 | 离线自检（27 项） | `npm test` |
 | 语法检查加自检 | `npm run check` |
 | 核对发布物清单 | `npm run check:pack` |
+| 重出 README 预览图 | `npm run build:preview`（需本机 Chrome，`CHROME_PATH` 可指定） |
 | 单文件语法检查 | `node --check lib/index.js` |
 
 ## 验收标准
@@ -43,6 +44,7 @@ git ──拉起──▶ scripts/git-credential-dsh-git-forge.mjs（独立进�
 |---|---|---|
 | `package.json` 的 `files` 白名单或 `exports` | 跑 `npm run check:pack` | 清单与声明一致；漏项在源码树里测不出，只有发布包会少文件 |
 | `lib/index.js` 的 API 路由、拦截、helper 配置 | 在 `scripts/smoke-test.mjs` 补用例 | `npm test` 全绿 |
+| `lib/client.js` 的界面 | 跑 `npm run build:preview` 并提交 `docs/panel-*.png`、`docs/preview/panel.html` | 预览图由 `lib/client.js` 加 `docs/preview/fixture.json`（虚构数据）渲染，界面改动后须同步 |
 | `lib/shared/*` | 同步检查 `lib/client.js` 是否复制了同样逻辑 | 两侧行为一致 |
 | 版本号 | `package.json`、README 与 README_en 的安装示例 `dsh-git-forge@x.y.z`、CHANGELOG 条目同次提交 | 三处版本一致 |
 | README 的用例数等事实 | 与 `npm test` 实际输出一致 | 数字相符 |
