@@ -59,7 +59,7 @@ SSH remotes and the system `gh auth` are untouched and keep using your local SSH
 
 ```powershell
 # stop the running DSH first (a live service holds the dependency lock; start it again afterwards)
-dsh plugin --profile <profile> add "dsh-git-forge@1.2.3"
+dsh plugin --profile <profile> add "dsh-git-forge@1.2.4"
 ```
 
 > **Note**: After installing, **refresh the browser page**; the "Git Credentials" tab is opened from the right sidebar's guide page — restarting the host alone is not enough, because the client artifact is fetched when the page loads.

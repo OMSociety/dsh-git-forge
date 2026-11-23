@@ -59,7 +59,7 @@ SSH 远程与系统 `gh auth` 不受影响，仍走本机 SSH / `gh`；本插件
 
 ```powershell
 # 先停掉正在运行的 DSH（运行中的服务会锁住依赖，装完再起）
-dsh plugin --profile <profile> add "dsh-git-forge@1.2.3"
+dsh plugin --profile <profile> add "dsh-git-forge@1.2.4"
 ```
 
 > **提示**：装好后**刷新一下浏览器页面**，「Git 凭据」从右侧栏的引导页打开——只重启宿主不够，客户端产物是页面加载时取的。

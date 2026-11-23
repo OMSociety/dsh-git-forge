@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-11-24
+
 ### 修复
 
 - **DSH 0.2.3-alpha.1+ 上侧栏 API 一律返回 `HTTP 400`。** `connection.requestRejection` 在新版宿主已移除（0.2.2-rc.2 ~ rc.5 仍保留兼容层，0.2.3-alpha.1 起移除），`createApiHandler()` 第一行调用它会抛 `TypeError`，被 WebServer 的兜底映射成 400 且不带 body。现在旧宿主沿用原检查，新宿主复用 WebServer 传入的 Peer 并要求 owner。
