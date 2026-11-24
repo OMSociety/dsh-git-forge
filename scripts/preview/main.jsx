@@ -5,6 +5,7 @@
 import * as React from 'react'
 import { createRoot } from 'react-dom/client'
 import { PROVIDER_DEFAULTS } from '../../lib/shared/account-summary.js'
+import { grantedGitHosts } from '../../lib/shared/git-policy.js'
 import fixture from '../../docs/preview/fixture.json'
 
 const slotComponents = {}
@@ -28,7 +29,7 @@ function json(payload, status = 200) {
 const routes = {
   getProjectContext: () => ({ ok: true, sessionId: fixture.sessionId, projectPathKey: fixture.projectPathKey }),
   listAccounts: () => ({ ok: true, accounts: fixture.accounts, defaults: PROVIDER_DEFAULTS }),
-  getGrants: () => ({ ok: true, accountIds: fixture.granted, enforcePush: fixture.enforcePush }),
+  getGrants: () => ({ ok: true, accountIds: fixture.granted, allowedHosts: grantedGitHosts(fixture.granted, fixture.accounts), enforcePush: fixture.enforcePush }),
   getUnboundPolicy: () => ({ ok: true, unboundPolicy: fixture.unboundPolicy }),
 }
 window.fetch = async (input) => {

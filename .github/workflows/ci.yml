@@ -24,14 +24,8 @@ jobs:
           node-version: 22
 
       # 零运行时依赖：测试只引用 Node 内置模块与本仓源码，因此没有安装步骤。
-      - name: 语法检查
-        run: |
-          set -euo pipefail
-          find lib scripts -type f \( -name '*.js' -o -name '*.cjs' -o -name '*.mjs' \) -print0 \
-            | xargs -0 -n1 node --check
-
-      - name: 冒烟测试
-        run: npm test
+      - name: 语法与冒烟测试
+        run: npm run check
 
       - name: 发布物清单
         run: npm run check:pack

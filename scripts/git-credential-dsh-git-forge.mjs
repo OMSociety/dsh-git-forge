@@ -6,11 +6,7 @@
  * Protocol: https://git-scm.com/docs/gitcredentials
  * Only "get" fills credentials. store/erase are no-ops (secrets stay in secrets.json).
  *
- * Project key resolution order:
- *   1) DSH_GIT_FORGE_PROJECT (session workspace; preferred)
- *   2) exact cwd match in grants.projects
- *   3) walk parents until a grants key matches (bounded to /workspace only
- *      when cwd is under /workspace; otherwise up to the filesystem root)
+ * Project key: DSH_GIT_FORGE_PROJECT from the host session.
  *
  * Never log password/token. Optional DSH_GIT_FORGE_HELPER_DEBUG=1 enables non-secret stderr.
  */
@@ -18,7 +14,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve as pathResolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { normalizeProjectKey, resolveGrantsProjectKey } from '../lib/shared/path.js'
+import { normalizeProjectKey } from '../lib/shared/path.js'
 import { selectTokenAccountForHost } from '../lib/shared/credential-select.js'
 
 function dataDir() {
@@ -46,18 +42,9 @@ export function parseCredentialInput(text) {
   return out
 }
 
-/**
- * @param {{ envProject?: string, cwd?: string, projects?: Record<string, unknown> }} input
- * @returns {{ key: string, source: 'env'|'cwd'|'walk'|'none' }}
- */
-export function resolveHelperProjectKey(input) {
-  const envKey = normalizeProjectKey(input.envProject || '')
-  if (envKey) return { key: envKey, source: 'env' }
-  const walked = resolveGrantsProjectKey(input.cwd || '', input.projects || {})
-  if (walked.key) return walked
-  const cwdKey = normalizeProjectKey(input.cwd || '')
-  if (cwdKey) return { key: cwdKey, source: 'cwd' }
-  return { key: '', source: 'none' }
+export function resolveHelperProjectKey({ envProject }) {
+  const key = normalizeProjectKey(envProject)
+  return { key, source: key ? 'env' : 'none' }
 }
 
 async function readStdin() {
@@ -76,16 +63,14 @@ async function runGet() {
   const raw = await readStdin()
   const req = parseCredentialInput(raw)
   const host = req.host || ''
+  if (req.protocol !== 'https' || !host || !process.env.DSH_GIT_FORGE_PROJECT) return
 
   const dir = dataDir()
   const accountsDoc = readJson(join(dir, 'accounts.json'), { version: 1, accounts: [] })
   const grantsDoc = readJson(join(dir, 'grants.json'), { version: 1, projects: {} })
-  const secretsDoc = readJson(join(dir, 'secrets.json'), { version: 1, byAccountId: {} })
 
   const resolved = resolveHelperProjectKey({
     envProject: process.env.DSH_GIT_FORGE_PROJECT || '',
-    cwd: process.cwd(),
-    projects: grantsDoc.projects || {},
   })
   const projectPathKey = resolved.key
   debug(
@@ -106,6 +91,7 @@ async function runGet() {
     debug(`${selected.code}: ${selected.message}`)
     return
   }
+  const secretsDoc = readJson(join(dir, 'secrets.json'), { byAccountId: {} })
   const token =
     secretsDoc.byAccountId && secretsDoc.byAccountId[selected.account.id]
       ? secretsDoc.byAccountId[selected.account.id].token

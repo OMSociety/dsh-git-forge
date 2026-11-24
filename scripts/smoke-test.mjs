@@ -5,11 +5,12 @@
  */
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { syncBuiltinESMExports } from 'node:module'
+import fs, { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { normalizeProjectKey, isPathInsideRoots, resolveGrantsProjectKey } from '../lib/shared/path.js'
+import { normalizeProjectKey, isPathInsideRoots } from '../lib/shared/path.js'
 import {
   publicAccount,
   modelAccountSummary,
@@ -25,7 +26,15 @@ import {
 } from '../lib/shared/git-policy.js'
 import { selectTokenAccountForHost } from '../lib/shared/credential-select.js'
 import { guessPushRemoteName } from '../lib/shared/remote-resolve.js'
-import { createApiHandler, inject } from '../lib/index.js'
+import { packProblems } from './check-pack.mjs'
+const temp = mkdtempSync(join(tmpdir(), 'forge-test-'))
+process.env.DSH_HOME = temp
+process.env.HOME = temp
+process.env.XDG_CONFIG_HOME = join(temp, 'xdg')
+delete process.env.GIT_CONFIG_GLOBAL
+process.env.GIT_CONFIG_NOSYSTEM = '1'
+const { createApiHandler, inject, apply } = await import('../lib/index.js')
+process.on('exit', () => rmSync(temp, { recursive: true, force: true }))
 import {
   parseCredentialInput,
   resolveHelperProjectKey,
@@ -104,19 +113,6 @@ test('classifyGitWriteCommand quoted payloads and anchored subcommand', () => {
   assert.equal(classifyGitWriteCommand('echo please git push now').kind, 'none')
   assert.equal(classifyGitWriteCommand("git commit -m 'please push'").kind, 'none')
   assert.equal(classifyGitWriteCommand('git -C sub push').kind, 'push')
-})
-
-test('strip-mount removes CRLF blocks and keeps EOL style', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'dgf-strip-'))
-  try {
-    const file = join(dir, 'cordis.patch.yml')
-    writeFileSync(file, 'packages:\r\n- insert:\r\n    - id: git-forge\r\n      name: dsh-git-forge\r\n')
-    const stripMount = fileURLToPath(new URL('./lib/strip-mount.cjs', import.meta.url))
-    execFileSync(process.execPath, [stripMount, file, 'git-forge'])
-    assert.equal(readFileSync(file, 'utf8'), 'packages:\r\n', 'block removed, CRLF preserved')
-  } finally {
-    rmSync(dir, { recursive: true, force: true })
-  }
 })
 
 test('evaluatePushPolicy blocks wrong host when granted', () => {
@@ -248,20 +244,8 @@ test('parseCredentialInput', () => {
   assert.equal(o.path, 'org/repo.git')
 })
 
-test('resolveGrantsProjectKey walks monorepo child to workspace grant', () => {
-  const wsKey = normalizeProjectKey('/workspace/DSH-plugin')
-  const child = normalizeProjectKey('/workspace/DSH-plugin/dsh-git-forge')
-  const projects = {
-    [wsKey]: { accountIds: ['a1'] },
-  }
-  const r = resolveGrantsProjectKey(child, projects)
-  assert.equal(r.key, wsKey)
-  assert.equal(r.source, 'walk')
-  const exact = resolveGrantsProjectKey(wsKey, projects)
-  assert.equal(exact.source, 'cwd')
-})
-
-test('resolveHelperProjectKey prefers env over cwd walk', () => {
+test('helper requires explicit session workspace', () => {
+  assert.equal(resolveHelperProjectKey({ cwd: temp }).key, '')
   const wsKey = normalizeProjectKey('/workspace/DSH-plugin')
   const other = normalizeProjectKey('/workspace/other/pkg')
   const projects = { [wsKey]: { accountIds: ['a1'] } }
@@ -275,7 +259,7 @@ test('resolveHelperProjectKey prefers env over cwd walk', () => {
 })
 
 test('guessPushRemoteName', () => {
-  assert.equal(guessPushRemoteName('git push'), 'origin')
+  assert.equal(guessPushRemoteName('git push'), '')
   assert.equal(guessPushRemoteName('git push origin main'), 'origin')
   assert.equal(guessPushRemoteName('git push --force-with-lease upstream HEAD'), 'upstream')
 })
@@ -316,10 +300,11 @@ async function assertRejectedApiRequest(status) {
   let dispatchCalls = 0
   const ctx = {
     connection: {
-      requestRejection(request) {
+      requestRejection() {},
+      admit(request) {
         assert.equal(request, req)
         events.push('authorize')
-        return status
+        return { rejection: status }
       },
     },
   }
@@ -350,11 +335,13 @@ test('API handler continues only after access check allows request', async () =>
   const res = createOfflineResponse(events)
   const ctx = {
     connection: {
-      requestRejection(request) {
+      requestRejection() {},
+      admit(request) {
         assert.equal(request, req)
         events.push('authorize')
-        return undefined
+        return { peer: this.browserPeer }
       },
+      browserPeer: fakePeer('owner'),
     },
   }
   const handler = createApiHandler(ctx, async (method, body, dispatchCtx) => {
@@ -422,6 +409,114 @@ test('API handler answers 403 on new host when no peer is passed', async () => {
   assert.equal(JSON.parse(res.body).ok, false)
   assert.equal(dispatchCalls, 0)
   assert.deepEqual(events, ['end'])
+})
+
+test('rc.5 API peer, missing admission and missing browser principal fail before dispatch', async () => {
+  for (const connection of [
+    { browserPeer: fakePeer('owner'), admit: () => ({ peer: fakePeer('owner') }) },
+    {}, { admit: () => ({}) },
+  ]) {
+    const events = [], response = createOfflineResponse(events)
+    await createApiHandler({ connection: { requestRejection() {}, ...connection } })(createOfflineRequest(events), response, fakePeer('owner'))
+    assert.equal(response.statusCode, 403)
+    assert.deepEqual(events, ['end'])
+  }
+})
+
+function fixture() {
+  const contexts = [], host = { sessions: { get: id => id === 's' ? { header: { cwd: temp } } : undefined }, connection: {},
+    effect(fn) { contexts.unshift(fn()) }, webServer: { register(route) { host.handler = route.handler } },
+    tools: { register(tool) { host.tool = tool; return () => {} }, guard(fn) { host.guard = fn } },
+    get(name) { return name === 'shellEnv' ? { register(c) { host.hints = c } } : { section() {} } },
+  }
+  apply(host)
+  host.close = () => contexts.forEach(fn => fn?.())
+  host.call = async (method, body = {}) => {
+    const res = createOfflineResponse([])
+    await host.handler({ method: 'POST', url: '/dsh-git-forge/api/' + method,
+      async *[Symbol.asyncIterator]() { yield Buffer.from(JSON.stringify(body)) },
+    }, res, fakePeer('owner'))
+    return JSON.parse(res.body)
+  }
+  return host
+}
+
+test('Git reads XDG then HOME or explicit global; disposal restores original scope', () => {
+  const xdg = join(process.env.XDG_CONFIG_HOME, 'git'); mkdirSync(xdg, { recursive: true })
+  writeFileSync(join(xdg, 'config'), '[fixture]\nfromxdg=true\norder=xdg\n')
+  writeFileSync(join(temp, '.gitconfig'), '[fixture]\norder=home\n')
+  const custom = join(temp, 'explicit'); writeFileSync(custom, '[fixture]\norder=explicit\n')
+  const git = key => execFileSync('git', ['config', '--global', '--includes', '--get', 'fixture.' + key], { encoding: 'utf8', cwd: temp }).trim()
+  for (const original of [undefined, custom]) {
+    if (original) process.env.GIT_CONFIG_GLOBAL = original
+    const f = fixture()
+    try { assert.equal(git('order'), original ? 'explicit' : 'home'); if (!original) assert.equal(git('fromxdg'), 'true') }
+    finally { f.close() }
+    assert.equal(process.env.GIT_CONFIG_GLOBAL, original)
+  }
+  delete process.env.GIT_CONFIG_GLOBAL
+})
+
+test('session grants, saved policy projection, Bash and Pwsh preflight and SSH cleanup', async () => {
+  const f = fixture(), exec = { agent: { session: { header: { cwd: temp } } } }
+  const fetchBefore = globalThis.fetch
+  try {
+    const empty = await f.call('getProjectContext', { cwd: temp }); assert.equal(empty.hasProject, false)
+    assert.equal((await f.call('setGrants', { cwd: temp })).ok, false)
+    assert.equal((await f.call('getProjectContext', { sessionId: 's' })).projectPathKey, normalizeProjectKey(temp))
+    assert.equal(f.hints.resolve({}).DSH_GIT_FORGE_PROJECT, '')
+    assert.equal(f.hints.resolve(exec).DSH_GIT_FORGE_PROJECT, normalizeProjectKey(temp))
+    const { account } = await f.call('saveAccount', { gitHost: 'git.example.invalid', apiBase: 'https://api.example.invalid', token: 'fixture' })
+    await f.call('setGrants', { sessionId: 's', accountIds: [account.id] })
+    assert.deepEqual((await f.call('getGrants', { sessionId: 's' })).allowedHosts, ['git.example.invalid'])
+    for (const name of ['bash', 'pwsh']) for (const op of ['push', 'remote add origin', 'remote set-url origin']) {
+      const check = host => f.guard({ ...exec, name, arguments: { command: `git ${op} https://${host}/demo.git` } })
+      assert.equal(check('git.example.invalid'), undefined); assert.match(check('api.example.invalid'), /blocked/)
+    }
+    const repo = join(temp, 'repository'); mkdirSync(repo)
+    const git = (...args) => execFileSync('git', args, { cwd: repo, stdio: 'ignore' })
+    git('init'); git('remote', 'add', 'fixture', 'https://git.example.invalid/demo'); git('config', 'remote.pushDefault', 'fixture')
+    const bare = () => f.guard({ ...exec, name: 'pwsh', arguments: { command: 'git push', workdir: 'repository' } })
+    assert.equal(bare(), undefined)
+    git('remote', 'set-url', '--add', '--push', 'fixture', 'https://git.example.invalid/one')
+    git('remote', 'set-url', '--add', '--push', 'fixture', 'https://second.example.invalid/two')
+    assert.match(bare(), /blocked/)
+    for (const [payload, ok] of [[{}, false], [{ login: 'sample' }, true]]) {
+      globalThis.fetch = async () => new Response(JSON.stringify(payload))
+      assert.equal((await f.call('probeAccount', { id: account.id })).ok, ok)
+    }
+    globalThis.fetch = async () => new Response('private upstream detail', { status: 403 })
+    assert.doesNotMatch(JSON.stringify(await f.call('probeAccount', { id: account.id })), /private upstream detail/)
+    await f.call('saveAccount', { id: account.id, authMethod: 'ssh' })
+    const secrets = JSON.parse(readFileSync(join(temp, 'git-forge', 'secrets.json')))
+    assert.equal(Object.hasOwn(secrets.byAccountId[account.id] || {}, 'token'), false)
+  } finally { globalThis.fetch = fetchBefore; f.close() }
+})
+
+test('a failed quarantine preserves damaged bytes and blocks a save', async () => {
+  const f = fixture(), original = fs.renameSync, file = join(temp, 'git-forge', 'accounts.json')
+  const before = readFileSync(file); writeFileSync(file, '{')
+  try {
+    fs.renameSync = (src, dest) => { if (src === file) throw new Error('fixture archive error'); return original(src, dest) }
+    syncBuiltinESMExports()
+    const result = await f.call('saveAccount', { gitHost: 'example.invalid' })
+    assert.equal(result.ok, false); assert.match(result.error, /Cannot archive/)
+    assert.equal(readFileSync(file, 'utf8'), '{')
+  } finally { fs.renameSync = original; syncBuiltinESMExports(); writeFileSync(file, before); f.close() }
+})
+
+test('pack validator rejects missing literal exports and files independently', () => {
+  const pkg = { main: 'index.js', icon: 'icon.svg', dsh: { bundle: { patch: 'patch.yml' } }, files: ['index.js'], exports: { '.': './index.js' } }
+  const paths = ['index.js', 'icon.svg', 'patch.yml', 'package.json']
+  assert.deepEqual(packProblems(pkg, paths), [])
+  assert.deepEqual(packProblems({ ...pkg, files: ['missing.txt'] }, paths), ['missing.txt'])
+  assert.deepEqual(packProblems({ ...pkg, exports: { '.': { import: './missing.js' } } }, paths), ['missing.js'])
+})
+
+test('browser entry has only its host-provided React module', () => {
+  const source = readFileSync(new URL('../lib/client.js', import.meta.url), 'utf8')
+  assert.deepEqual([...source.matchAll(/\brequire\(["']([^"']+)["']\)/g)].map(m => m[1]), ['react'])
+  assert.doesNotMatch(source, /\bimport\s*(?:\(|["'{*]|[\w$]+\s+from)|node:/)
 })
 
 let failed = 0

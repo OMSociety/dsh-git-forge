@@ -93,7 +93,11 @@ async function captureScreenshots() {
       await page.goto(`${pathToFileURL(OUT).href}#theme=dark`, { waitUntil: 'load' })
       await page.waitForFunction(() => document.documentElement.dataset.previewReady === 'true', null, { timeout: 15000 })
       if (shot.tab) {
+        // 编辑草稿时，状态页仍应显示服务端已保存的主机。
+        const gitee = page.getByRole('checkbox', { name: /Gitee/i })
+        await gitee.uncheck()
         await page.getByRole('button', { name: shot.tab, exact: true }).click()
+        await page.getByText('gitee.com', { exact: true }).waitFor({ timeout: 3000 })
         await page.waitForTimeout(200)
       }
       // 面板高度贴合内容：先让面板按内容自适应，量出整页高度，再按该高度截图。
