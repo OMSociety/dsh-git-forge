@@ -1,6 +1,6 @@
 {
   "name": "dsh-git-forge",
-  "version": "1.2.4",
+  "version": "1.3.0",
   "description": "GitHub/Gitea (and other forge) accounts with project-scoped grants and push policy for DeepSeek Harness",
   "type": "module",
   "license": "MIT",
@@ -45,7 +45,7 @@
   },
   "scripts": {
     "test": "node scripts/smoke-test.mjs",
-    "check": "node --check lib/index.js && node scripts/smoke-test.mjs",
+    "check": "node scripts/check.mjs && npm test",
     "check:pack": "node scripts/check-pack.mjs",
     "build:preview": "node scripts/build-preview.mjs"
   },
@@ -69,12 +69,7 @@
     "README_en.md",
     "cordis.patch.yml",
     "lib",
-    "scripts/install.sh",
-    "scripts/install.ps1",
-    "scripts/lib/*.cjs",
     "scripts/git-credential-dsh-git-forge.mjs",
-    "scripts/smoke-test.mjs",
-    "scripts/sync-to-dsh.sh",
     "icon.svg",
     "locale/*.json"
   ],

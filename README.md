@@ -4,7 +4,7 @@
 <h1><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/logo.png" width="192" alt="DSH Git Forge"><br>DSH Git Forge</h1>
 
   <p>DeepSeek Harness 的 Git 凭据与推送权限管理器：哪个项目能用哪个账号、允许推到哪些 host，一处说清。</p>
-  <p>账号库与 token 只落在宿主侧。<strong>按项目授权</strong>决定 agent 用哪个账号，<strong>push 拦截</strong>决定这个项目允许推到哪。</p>
+  <p>工作区授权决定 HTTPS 凭据；宿主为 Bash 和 PowerShell 中指定的 Git 命令做预检。</p>
 
   <p>
     <a href="https://www.npmjs.com/package/dsh-git-forge"><img src="https://img.shields.io/npm/v/dsh-git-forge?label=version&color=4f6ef7" alt="Version"></a>
@@ -24,7 +24,7 @@
 它管两件事：
 
 - **agent 用哪份凭据**：在侧栏给项目授权账号之后，agent shell 里的 HTTPS `git fetch` / `git push` 由本插件的 credential helper 自动取用对应 token，token 只在宿主侧读，**不进模型上下文**。
-- **这个项目允许推到哪**：未授权 host 会被 push 拦截器在工具层直接拒绝；裸 `git push` 与 `git push origin` 会先解析 remote URL 再判定。
+- **Git 命令预检**：开启策略时，宿主对 Bash、PowerShell 工具中直接调用的 `git push`、`git remote add`、`git remote set-url` 核对已授权 Git 主机。
 
 SSH 远程与系统 `gh auth` 不受影响，仍走本机 SSH / `gh`；本插件只补 **DSH agent shell 下的 HTTPS** 这一段。
 
@@ -47,7 +47,7 @@ SSH 远程与系统 `gh auth` 不受影响，仍走本机 SSH / `gh`；本插件
 
 ```powershell
 # 先停掉正在运行的 DSH（运行中的服务会锁住依赖，装完再起）
-dsh plugin --profile <profile> add "dsh-git-forge@1.2.4"
+dsh plugin --profile desktop add "dsh-git-forge@1.3.0"
 ```
 
 > **提示**：装好后**刷新一下浏览器页面**，「Git 凭据」从右侧栏的引导页打开——只重启宿主不够，客户端产物是页面加载时取的。
@@ -58,7 +58,7 @@ dsh plugin --profile <profile> add "dsh-git-forge@1.2.4"
 2. 点探测确认这个 token 有效
 3. 切到 **项目授权** → 勾上该账号并保存，当前工作区就拿到了推送凭据
 4. 让 agent 在项目里跑 HTTPS 的 `git fetch` / `git push`，凭据由 helper 自动注入，模型看不到 token
-5. 反过来试一个未授权的 host：让 agent 推过去，应当被 push 拦截器直接拒绝
+5. 用 `GitForge action=check_remote` 查看目标是否符合策略，此检查不发起推送。
 
 ## 侧栏
 
@@ -82,9 +82,9 @@ dsh plugin --profile <profile> add "dsh-git-forge@1.2.4"
 ### Agent HTTPS 与项目路径
 
 - 授权 key = **DSH 会话工作区**（agent shell 里注入 `DSH_GIT_FORGE_PROJECT`），不是子仓路径；工作区路径按磁盘实态归一（realpath），Windows 8.3 短名与符号链接折叠到同一 key
-- helper 找项目：`env` → cwd 精确匹配 → 向父目录 walk（cwd 在 `/workspace` 下时上界为 `/workspace`，否则走到根）
+- helper 只用宿主提供的会话工作区；缺少有效会话时，侧栏显示未绑定，项目授权不可保存。
 - R1：同一 host 仅当恰好 **1** 个已授权 **token** 账号时才自动注入凭据
-- agent shell 的 `GIT_CONFIG_GLOBAL` 指向 `$DSH_HOME/git-forge/gitconfig`；文件第一行 `include` 回接你的用户级 gitconfig（`user.name` / `user.email` / `http.proxy` 等照常生效），随后一条空 `credential.helper` 清掉系统级 helper，再挂本插件 helper——系统凭据管理器的弹窗不会卡住无头 shell，用户自己配的 helper 也会被同样清掉
+- 宿主生成的 Git 配置优先包含显式 `GIT_CONFIG_GLOBAL`；未设置时依次包含 XDG Git 配置、`~/.gitconfig`。随后清空 helper 列表并挂载 Forge helper；停用时恢复原环境。
 
 ## 数据放在哪
 
@@ -97,40 +97,42 @@ dsh plugin --profile <profile> add "dsh-git-forge@1.2.4"
 | `grants.json` | `projectPathKey → accountIds[]` 与 enforce / unbound 策略 |
 | `gitconfig` | 注入给 agent shell 的 credential helper 配置（不含凭据） |
 
-> **注意**：`accounts.json` / `secrets.json` / `grants.json` 若解析失败，坏文件会被改名保留为 `<原名>.corrupt-<时间戳>` 并回退默认值，不会覆盖丢失现场。
+> **注意**：JSON 解析失败时先将原文件归档为 `<原名>.corrupt-<UUID>`，再使用默认值；读取或归档失败即中止。请先备份原文件并修复权限或 JSON，再保存。
 
 ## 安全
 
 - token 不出现在 API 结果、工具结果与模型上下文里
-- push 策略在 Host `tools.guard` 中硬拦截，不依赖模型自觉：命令里的 URL、裸 `git push`、`git remote add` / `set-url` 都按授权判定
-- 未给项目配置任何授权时，push 拦截器默认**不**拦截（便于渐进启用），helper 也不会凭空给出凭据
+- 策略状态页和 `get_policy` 显示已保存的 Git 主机授权；命令预检以此核对 Git 访问目标。API 端点用于账号探测。选择 SSH 会清除本账号已存 token，SSH 认证交给系统。
+- 项目授权为空时，命令预检默认放行，凭据助手返回空凭据结果。
 - token 只落在宿主侧数据目录 `secrets.json`；helper 是由 git 拉起的独立进程，按需读取；token 不进模型上下文。`secrets.json` 疑似泄露请立即轮换 token
-- 侧栏 API 在解析 URL、读取正文、访问账号或授权数据及业务分派之前完成宿主准入校验。旧宿主（`@deepseek-ai/dsh-client-connection` <= 0.2.2-rc.5）仍调用 `connection.requestRejection`，`401` / `403` 按原状态码结束响应；新宿主（>= 0.2.3-alpha.1）已由 WebServer 完成准入，handler 复用传入的 Peer 并要求 `principal.kind === 'owner'`，无 Peer 或非 owner 一律 403
-- push 检测基于命令文本启发式，已知绕过面（env 变量改名 git、git alias、路径经变量拼接、非 bash/sh 包装器、`time`/`nice` 等未覆盖前缀）；这一边界是明示的检测口径，不是放行依据
+- 管理请求先鉴权再读正文。**0.2.2-rc.5 专属适配**：仅接受 `connection.admit(req)` 认证出的浏览器 owner 单例，注册的 API Peer 不能管理。**0.2.3-alpha.2**：使用 WebServer 传入的第三参 Peer，要求其 principal 为 `owner`。缺少所有者证明即拒绝。
+- 命令预检覆盖 Bash 和 PowerShell 中直接调用的 `git push`、`git remote add`、`git remote set-url`。进程隔离与网络出口控制由操作系统负责。
 - 配置了授权的项目里，裸 `git push` 的 remote 解析失败会重试一次，仍失败即拒绝（fail-closed）
 
 ## 环境要求
 
-- DSH profile（desktop 与服务器自建均可）；插件不声明 DSH 版本要求，装进哪个宿主就在哪个宿主上跑
+- DSH profile。离线契约测试覆盖 `0.2.2-rc.5` 与 `0.2.3-alpha.2`。
 - Node.js `>= 20`
 
 ## 开发
 
-```powershell
-npm test                      # 27 项离线自检（scripts/smoke-test.mjs）
-npm run check                 # 语法 + 自检
-npm run build:preview          # 重出 docs/ 下的侧栏预览图（需本机 Chrome，CHROME_PATH 可指定）
-DSH_PROFILE=desktop bash scripts/sync-to-dsh.sh   # 以 link: 方式把本仓库接入 DSH profile（开发用）
+Bash / PowerShell:
+
+```text
+npm test
+npm run check
+npm run check:pack
+npm run build:preview
 ```
 
 目录与「改东西去哪」：
 
 ```text
-lib/index.js            宿主入口：工具注册、/dsh-git-forge/api 路由、push 拦截、credential helper 配置
+lib/index.js            宿主入口：工具注册、/dsh-git-forge/api 路由、Git 命令预检、credential helper 配置
 lib/client.js           客户端 bundle（已入库；dsh plugin add 不做构建）
-lib/shared/             宿主与客户端共用纯函数：path / git-policy / remote-resolve / credential-select / account-summary
+lib/shared/             Node 模块：path、remote-resolve；平台无关规则：account-summary、credential-select、git-policy
 docs/preview/           预览输入：fixture.json 为虚构数据，panel.html 与 docs/panel-*.png 由 build:preview 生成
-scripts/                install.sh · install.ps1 · sync-to-dsh.sh · smoke-test.mjs · git-credential helper
+scripts/                Git 凭据助手、离线测试、包清单检查与预览图生成
 cordis.patch.yml        包内 bundle patch，CLI 据此写入 dsh.profile.bundles
 ```
 

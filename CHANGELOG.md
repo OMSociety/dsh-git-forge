@@ -12,6 +12,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-25
+
+### Changed / 变更
+
+- Workspace-only HTTPS credential selection and Bash/PowerShell Git command preflight share saved Git-host grants. / HTTPS 凭据只按会话工作区选择，Bash、PowerShell 的 Git 命令预检与状态页共用已保存的 Git 主机授权。
+- Management requires an authenticated owner: the browser owner singleton on 0.2.2-rc.5, the request Peer on 0.2.3-alpha.2. / 0.2.2-rc.5 仅限认证浏览器所有者管理；0.2.3-alpha.2 校验请求 Peer 的 owner 身份。
+
+### Fixed / 修复
+
+- Quarantine failures stop writes; Git global configuration keeps its precedence. SSH selection clears the token; API probes require provider identity. / 归档失败中止保存，保留 Git 全局配置优先级；SSH 账号清除 token，API 探测校验提供商身份字段。
+- Shared syntax and package checks cover release declarations. / 开发与 CI 共用语法检查，包清单检查核对声明路径。
+
+### Removed / 移除
+
+- Removed profile installers, profile repair helpers and the checkout synchronization script. Install through the DSH plugin manager. / 移除自维护安装器、profile 修复助手与源码同步脚本，统一使用宿主插件安装入口。
+
 ## [1.2.4] - 2026-11-24
 
 ### 修复
@@ -72,7 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 修复
 
 - **侧栏 API 同源校验**：`Sec-Fetch-Site: cross-site` 一律拒绝；请求缺该头时校验 `Origin` 与 `Host` 是否一致；宿主信任列表经 `webRuntime` 可选注入读取。
-- **push 检测锚定子命令**：`git` 之后跳过全局旗标与环境变量赋值再取子命令，`bash -lc` / `sh -c` 的引号载荷递归分类——引号里的 push 逃不过检测，commit message 与普通文字里的 "push" 触发误报。
+- **push 检测锚定子命令**：`git` 之后跳过全局旗标与环境变量赋值再取子命令，`bash -lc` / `sh -c` 的引号载荷递归分类——引号里的 push 逃不过检测，commit message 与普通文字里的 "push" 不会触发误报。
 - **裸 push 放行链收紧**：remote 解析失败重试一次，仍失败且项目开启 enforce 时拒绝（fail-closed）。
 - **`GIT_CONFIG_GLOBAL` 回接用户全局配置**：生成的 gitconfig 首行 `include` 用户级 gitconfig，`user.name` / `user.email` / `http.proxy` 照常生效；空 `helper =` 的清空语义在 include 顺序下经实测保持正确。
 - **配置文件损坏隔离**：解析失败时把坏文件改名保留为 `<原名>.corrupt-<时间戳>` 并回退默认值，现场不丢。

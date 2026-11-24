@@ -4,7 +4,7 @@
 <h1><img src="https://raw.githubusercontent.com/OMSociety/dsh-git-forge/main/docs/logo.png" width="192" alt="DSH Git Forge"><br>DSH Git Forge</h1>
 
   <p>Git credentials and push policy for DeepSeek Harness: which project may use which account, and where it is allowed to push.</p>
-  <p>Accounts and tokens stay host-side. <strong>Per-project grants</strong> decide which account an agent uses; the <strong>push guard</strong> decides where that project may push.</p>
+  <p>Workspace grants select an HTTPS credential. The host preflights selected Git commands in Bash and PowerShell.</p>
 
   <p>
     <a href="https://www.npmjs.com/package/dsh-git-forge"><img src="https://img.shields.io/npm/v/dsh-git-forge?label=version&color=4f6ef7" alt="Version"></a>
@@ -24,7 +24,7 @@
 It governs two things:
 
 - **Which credential an agent uses.** Once a project is granted an account, HTTPS `git fetch` / `git push` in agent shells pick up that account's token through this plugin's credential helper. Tokens are read host-side only and **never enter model context**.
-- **Where the project may push.** Non-granted hosts are rejected at the tool layer by the push guard; bare `git push` and `git push origin` are resolved to their remote URL before the decision.
+- **Git preflight**: when enforcement is enabled, direct `git push`, `git remote add` and `git remote set-url` in the Bash and PowerShell tools are checked against granted Git hosts.
 
 SSH remotes and the system `gh auth` are untouched and keep using your local SSH / `gh`. This plugin only covers **HTTPS in DSH agent shells**.
 
@@ -47,7 +47,7 @@ SSH remotes and the system `gh auth` are untouched and keep using your local SSH
 
 ```powershell
 # stop the running DSH first (a live service holds the dependency lock; start it again afterwards)
-dsh plugin --profile <profile> add "dsh-git-forge@1.2.4"
+dsh plugin --profile desktop add "dsh-git-forge@1.3.0"
 ```
 
 > **Note**: After installing, **refresh the browser page**; the "Git Credentials" tab is opened from the right sidebar's guide page — restarting the host alone is not enough, because the client artifact is fetched when the page loads.
@@ -58,7 +58,7 @@ dsh plugin --profile <profile> add "dsh-git-forge@1.2.4"
 2. Use the probe to confirm the token works
 3. Switch to **Project access**, tick that account and save — the current workspace now has push credentials
 4. Have the agent run HTTPS `git fetch` / `git push` in the project; the helper fills in the credential and the model never sees the token
-5. Try the opposite: point the agent at a non-granted host and the push guard should reject it outright
+5. Use `GitForge action=check_remote` to inspect a destination without sending data.
 
 ## Sidebar
 
@@ -82,9 +82,9 @@ One sidebar tab with three pages:
 ### Agent HTTPS and project paths
 
 - Grant key = the **DSH session workspace** (injected into agent shells as `DSH_GIT_FORGE_PROJECT`), not a nested path; workspace paths are canonicalized through the filesystem state (realpath), so Windows 8.3 short names and symlinks collapse onto one key
-- Helper resolves the project as: `env` → exact cwd → walk parents (bounded to `/workspace` when cwd is under it, otherwise up to the filesystem root)
+- The helper requires the workspace supplied by the host. A missing session leaves the panel unbound and disables saving project grants.
 - R1: credentials are auto-filled only when exactly **one** token account is granted for that host
-- An agent shell's `GIT_CONFIG_GLOBAL` points at `$DSH_HOME/git-forge/gitconfig`; the first line `include`s your user-level gitconfig (`user.name` / `user.email` / `http.proxy` keep working), followed by an empty `credential.helper` that clears system-level helpers, then this plugin's helper — a system credential manager cannot pop a dialog and hang a headless shell, and user-configured helpers are cleared the same way
+- The generated Git config includes the explicit `GIT_CONFIG_GLOBAL` if set; otherwise Git reads the XDG config followed by `~/.gitconfig`. The helper list is reset before the Forge helper is registered. Disposal restores the previous environment.
 
 ## Where data lives
 
@@ -97,40 +97,42 @@ Under `$DSH_HOME/git-forge/` (directory mode `0700`; `0600`/`0700` modes apply o
 | `grants.json` | `projectPathKey → accountIds[]` plus enforce / unbound policy |
 | `gitconfig` | Credential helper config injected into agent shells (holds no credentials) |
 
-> **Note**: if `accounts.json` / `secrets.json` / `grants.json` fail to parse, the corrupt file is renamed to `<name>.corrupt-<timestamp>` and defaults are used — the original is never overwritten away.
+> **Note**: Invalid JSON is archived as `<name>.corrupt-<UUID>` before defaults are used. Read or archive errors stop the operation; back up the original and repair its permissions or JSON before saving.
 
 ## Security
 
 - Tokens never appear in API results, tool results or model context
-- Push policy is enforced in the host's `tools.guard`, not left to the model: URLs in the command, bare `git push`, and `git remote add` / `set-url` are all decided against the grants
-- With no grants configured for a project, the push guard does **not** block by default (progressive enablement), and the helper supplies no credentials either
+- The status tab and `get_policy` show saved Git-host grants. Command preflight checks Git destinations against these grants. API endpoints are used for account probes. Selecting SSH clears the stored token and delegates authentication to system SSH.
+- When a project has no grants, command preflight allows the command by default and the credential helper returns an empty result.
 - Tokens live only in the host-side data file `secrets.json`; the helper is a separate process spawned by git and reads it on demand; tokens never enter model context. Rotate tokens immediately if `secrets.json` may have leaked
-- The sidebar API completes host admission before parsing the URL, reading the body, accessing account or grant data, or dispatching business logic. On older hosts (`@deepseek-ai/dsh-client-connection` <= 0.2.2-rc.5) it still calls `connection.requestRejection`, and `401` / `403` end the response with the original status; on newer hosts (>= 0.2.3-alpha.1) the WebServer has already admitted the request, so the handler consumes the passed Peer and requires `principal.kind === 'owner'`, answering 403 for a missing or non-owner peer
-- Push detection is a text-heuristic and has a known bypass surface (git renamed via an env var, git aliases, paths assembled through variables, non-bash/sh wrappers, uncovered prefixes like `time`/`nice`); this boundary states the detection scope, it is not an endorsement
+- Management routes authenticate before reading the body. On **0.2.2-rc.5**, only `connection.admit(req).peer` identical to the browser owner singleton is accepted; registered API peers are denied. On **0.2.3-alpha.2**, the WebServer passes the authenticated Peer to the handler and its principal must be `owner`. Missing owner evidence denies access.
+- Preflight covers direct `git push`, `git remote add`, and `git remote set-url` commands in Bash and PowerShell. The operating system is responsible for process isolation and network egress controls.
 - In a project with grants, a bare `git push` whose remote cannot be resolved is retried once, then rejected (fail-closed)
 
 ## Requirements
 
-- A DSH profile (desktop and self-hosted servers both work); the plugin declares no DSH version requirement and runs on whatever host it is installed into
+- DSH profile. Host contracts covered by the offline tests: `0.2.2-rc.5` and `0.2.3-alpha.2`.
 - Node.js `>= 20`
 
 ## Development
 
-```powershell
-npm test                      # 27 offline checks (scripts/smoke-test.mjs)
-npm run check                 # syntax + smoke tests
-npm run build:preview          # regenerate the sidebar preview images under docs/ (needs local Chrome; CHROME_PATH overrides)
-DSH_PROFILE=desktop bash scripts/sync-to-dsh.sh   # register this checkout into a DSH profile as link: (dev)
+Bash / PowerShell:
+
+```text
+npm test
+npm run check
+npm run check:pack
+npm run build:preview
 ```
 
 Layout and where to change what:
 
 ```text
-lib/index.js            Host entry: tool registration, /dsh-git-forge/api routes, push guard, credential helper config
+lib/index.js            Host entry: tool registration, /dsh-git-forge/api routes, Git command preflight, credential helper config
 lib/client.js           Client bundle (committed; dsh plugin add does not build)
-lib/shared/             Pure functions shared by host and client: path / git-policy / remote-resolve / credential-select / account-summary
+lib/shared/             Node: path, remote-resolve; platform-independent: account-summary, credential-select, git-policy
 docs/preview/           Preview input: fixture.json is fictional data; panel.html and docs/panel-*.png are generated by build:preview
-scripts/                install.sh · install.ps1 · sync-to-dsh.sh · smoke-test.mjs · git-credential helper
+scripts/                Git credential helper, offline tests, package checks and preview renderer
 cordis.patch.yml        In-package bundle patch the CLI turns into dsh.profile.bundles
 ```
 
