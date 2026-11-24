@@ -10,266 +10,254 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
 ## [1.3.0] - 2026-11-25
 
-### Changed / 变更
+### 变更
 
-- Workspace-only HTTPS credential selection and Bash/PowerShell Git command preflight share saved Git-host grants. / HTTPS 凭据只按会话工作区选择，Bash、PowerShell 的 Git 命令预检与状态页共用已保存的 Git 主机授权。
-- Management requires an authenticated owner: the browser owner singleton on 0.2.2-rc.5, the request Peer on 0.2.3-alpha.2. / 0.2.2-rc.5 仅限认证浏览器所有者管理；0.2.3-alpha.2 校验请求 Peer 的 owner 身份。
+- HTTPS 凭据只按 DSH 会话工作区的授权选择。工作区未绑定时，侧栏不能保存项目授权，凭据助手也不提供 token；同一 Git 主机有多个已授权 token 账号时，仍需选定一个。
+- Bash 和 PowerShell 中直接执行的 `git push`、`git remote add`、`git remote set-url` 按已保存的 Git 主机授权预检。裸推送按 Git 配置选择远程，并核对该远程的所有推送地址。预检只针对这些命令；进程隔离和网络出口限制由操作系统负责。
 
-### Fixed / 修复
+### 安全
 
-- Quarantine failures stop writes; Git global configuration keeps its precedence. SSH selection clears the token; API probes require provider identity. / 归档失败中止保存，保留 Git 全局配置优先级；SSH 账号清除 token，API 探测校验提供商身份字段。
-- Shared syntax and package checks cover release declarations. / 开发与 CI 共用语法检查，包清单检查核对声明路径。
+- 只有通过宿主认证的所有者可以管理账号和授权。在 DSH `0.2.2-rc.5` 上必须是浏览器所有者连接；在 `0.2.3-alpha.2` 上，请求连接必须具有 `owner` 身份。身份无法确认时，先拒绝请求，不读取正文。
+- 账号切换为 SSH 时清除已存 token，SSH 认证由系统处理。API 探测只有收到对应服务的账号身份字段才报告成功；API 地址不作为推送授权主机。
 
-### Removed / 移除
+### 修复
 
-- Removed profile installers, profile repair helpers and the checkout synchronization script. Install through the DSH plugin manager. / 移除自维护安装器、profile 修复助手与源码同步脚本，统一使用宿主插件安装入口。
+- 账号或授权数据无法读取，或损坏的文件无法归档时，中止保存，防止默认值覆盖原数据。
+- Agent shell 优先使用显式指定的 `GIT_CONFIG_GLOBAL`；未指定时按 Git 的顺序读取 XDG 配置和 `~/.gitconfig`，保留用户设置的优先级。
+
+### 移除
+
+- 移除独立安装脚本、profile 修复助手和源码同步脚本。安装插件使用 DSH 插件管理器。
+
+### Changed
+
+- HTTPS credentials are selected only from grants for the DSH session workspace. With no bound workspace, the sidebar cannot save project grants and the credential helper supplies no token. If several token accounts are granted for the same Git host, select just one.
+- Direct `git push`, `git remote add` and `git remote set-url` commands in Bash and PowerShell are checked against saved Git-host grants. For a bare push, the check uses Git configuration to select the remote and checks all its push URLs. This check covers only those commands; process isolation and network egress controls are the operating system’s responsibility.
+
+### Security
+
+- Only a host-authenticated owner can manage accounts and grants. DSH `0.2.2-rc.5` requires the browser owner connection; `0.2.3-alpha.2` requires the request connection to have an `owner` identity. Requests without proof of ownership are rejected before the body is read.
+- Switching an account to SSH clears its stored token and leaves SSH authentication to the system. An API probe reports success only if the provider returns an account identity field. The API endpoint does not count as an authorized push host.
+
+### Fixed
+
+- Saving stops if account or grant data cannot be read or a corrupt file cannot be archived, so defaults cannot overwrite the original data.
+- Agent shells honor an explicit `GIT_CONFIG_GLOBAL`. Otherwise they read the XDG configuration and `~/.gitconfig` in Git’s order, preserving the precedence of user settings.
+
+### Removed
+
+- Removed the standalone installers, profile repair helpers and source synchronization script. Use the DSH plugin manager to install the plugin.
 
 ## [1.2.4] - 2026-11-24
 
 ### 修复
 
-- **DSH 0.2.3-alpha.1+ 上侧栏 API 一律返回 `HTTP 400`。** `connection.requestRejection` 在新版宿主已移除（0.2.2-rc.2 ~ rc.5 仍保留兼容层，0.2.3-alpha.1 起移除），`createApiHandler()` 第一行调用它会抛 `TypeError`，被 WebServer 的兜底映射成 400 且不带 body。现在旧宿主沿用原检查，新宿主复用 WebServer 传入的 Peer 并要求 owner。
+- 在 DSH `0.2.3-alpha.1` 上，所有者可以再次使用侧栏管理账号和授权，而不会收到 `HTTP 400`。侧栏按宿主传入的连接校验所有者身份；提供原有访问检查的宿主仍使用该检查。([#5](https://github.com/OMSociety/dsh-git-forge/pull/5))
 
 ### Fixed
 
-- **The sidebar API answered `HTTP 400` on DSH 0.2.3-alpha.1+.** `connection.requestRejection` is gone from newer hosts (0.2.2-rc.2 ~ rc.5 still carried a compatibility layer; it was removed in 0.2.3-alpha.1), so the first line of `createApiHandler()` threw a `TypeError` that the WebServer mapped to a body-less 400. Older hosts keep the original check; newer hosts consume the Peer passed by the WebServer and require owner.
+- On DSH `0.2.3-alpha.1`, owners can use the sidebar to manage accounts and grants without receiving `HTTP 400`. The sidebar checks the owner identity on the connection supplied by the host. Hosts that provide the original access check still use it. ([#5](https://github.com/OMSociety/dsh-git-forge/pull/5))
 
 ## [1.2.3] - 2026-11-22
 
+### 安全
+
+- 侧栏 API 在读取请求正文或访问账号、授权之前执行宿主的访问检查，保留宿主返回的 `401` 或 `403` 状态码。
+
+### 变更
+
+- 插件清单不再限定 DSH 版本范围。
+
 ### 修复
 
-- **侧栏 API 缺少宿主访问检查。** `/dsh-git-forge/api` 在解析 URL、读取正文、访问账号或授权数据及业务分派之前调用 `connection.requestRejection`；`401` / `403` 按原状态码结束响应，仅 `undefined` 继续处理。
-- **右侧栏页签的图标比文字高一两个像素。** 标题席位的内容由宿主放进 chip 自己的 flex 行（`.tabTitle` 为 `display: contents`）；此前标题把 `svg` 与文字一起包在普通行内 `<span>` 里，图标按文本基线对齐。现在标题自带 `inline-flex` 容器并以 `align-items: center` 居中，图标与文字的间距由 `gap` 提供。
+- 右侧栏页签的图标与文字垂直居中。
+
+### Security
+
+- The sidebar API runs the host access check before reading the request body or accessing accounts and grants, preserving the host’s `401` or `403` status code.
+
+### Changed
+
+- The plugin manifest no longer restricts the DSH version range.
 
 ### Fixed
 
-- **The sidebar API lacked the host access check.** `/dsh-git-forge/api` calls `connection.requestRejection` before parsing the URL, reading the body, accessing account or grant data, or dispatching business logic; `401` and `403` end the response with the original status, and only `undefined` continues processing.
-- **The sidebar tab's icon sat a pixel or two above its label.** The host mounts a title seat into the chip's own flex row (`.tabTitle` is `display: contents`); the title wrapped the svg and its label in a plain inline `<span>`, so the icon aligned on the text baseline. The title now carries an `inline-flex` wrapper centred with `align-items: center`, and the icon-to-label spacing comes from `gap`.
+- The right sidebar tab icon is vertically centered with its label.
 
 ## [1.2.2] - 2026-11-02
 
 ### 变更
 
-- 引入 GitHub Actions 冒烟测试：在 ubuntu-latest 上跑语法检查与 `scripts/smoke-test.mjs` 的全部断言。
+- 安装兼容范围包含 DSH `0.2.1-rc.1`。GitHub Actions 在 Linux 上检查语法并运行冒烟测试。([#2](https://github.com/OMSociety/dsh-git-forge/pull/2))
 
 ### Changed
 
-- CI: GitHub Actions now runs the syntax check and every assertion in `scripts/smoke-test.mjs` on ubuntu-latest.
+- The installable DSH range includes `0.2.1-rc.1`. GitHub Actions checks syntax and runs smoke tests on Linux. ([#2](https://github.com/OMSociety/dsh-git-forge/pull/2))
 
 ## [1.2.1] - 2026-11-01
 
 ### 修复
 
-- **客户端样式表在插件停用后残留。** `lib/client.js` 的 `ensureStyles()` 只往 `document.head` 插 `<style id="dsh-git-forge-style">`、不交出撤销手段，`apply()` 又是裸调用，于是禁用或热替换之后宿主页面继续带着这份规则（面板已经消失，样式还在）。现在 `ensureStyles()` 返回移除该节点的 disposer，`apply()` 经 `ctx.effect` 收下，随插件生命周期一起撤销。
+- 插件停用或热替换时会卸载侧栏样式，宿主页面不会继续应用这些样式。
 
 ### Fixed
 
-- **The client stylesheet survived a disabled plugin.** `ensureStyles()` in `lib/client.js` only inserted `<style id="dsh-git-forge-style">` into `document.head` and handed back no way to undo it, and `apply()` called it bare, so the host page kept the rules after a disable or a hot swap (panel gone, styles still there). `ensureStyles()` now returns a disposer that removes the node, and `apply()` takes it through `ctx.effect` so it is dropped with the plugin.
+- Disabling or hot-swapping the plugin unloads its sidebar stylesheet so the host page stops applying those styles.
 
 ## [1.2.0] - 2026-10-09
 
-### 新增
-
-- **`.gitattributes`**：`* text=auto eol=lf`、`*.ps1 eol=crlf`、`docs/logo.png binary`，跨平台检出换行一致。
-
 ### 变更
 
-- **补录 1.1.0 之后发布的三笔变更**（7c3ffdb / 8985418 / e631ade）：
-  - 安装说明收敛为 npm 单一写法，版本徽章改 npm 源；
-  - 安装脚本 `--profile` / `-Profile` 必填，缺失或不存在时列出实存 profile 并退出 2；
-  - 安装脚本抽出 `scripts/lib/*.cjs` 助手（ws-exclude / bundle-check / strip-mount），profile 配置改写收进 `--fix-profile` 显式开关（幂等、写后回读断言）。
-- **`dsh.client.inject` 双写齐备**：`@deepseek-ai/dsh-client-locale` 与 `@deepseek-ai/dsh-client-ui-sidebar-right` 同时声明（两个 peer 此前已在 `peerDependencies` 里）。
-- **`sync-to-dsh.sh` 的 `DSH_PROFILE` 必填**（桌面版为 `desktop`），空值报错退出 2；README 的开发与环境要求段落同步照实。
+- 安装脚本要求指定已有的 DSH profile，只有显式选择修复时才改写 profile 配置。开发用的同步脚本也要求指定 `DSH_PROFILE`。
+
+### 安全
+
+- 侧栏 API 拒绝标记为跨站的浏览器请求。缺少 `Sec-Fetch-Site` 而提供 `Origin` 时，还会核对来源与请求主机是否一致。
+- 推送检查能识别带 Git 全局选项的命令以及 `bash -lc`、`sh -c` 中的推送，同时区分提交说明里的普通文字。启用强制策略时，裸推送的目标解析重试后仍失败即拒绝。
 
 ### 修复
 
-- **侧栏 API 同源校验**：`Sec-Fetch-Site: cross-site` 一律拒绝；请求缺该头时校验 `Origin` 与 `Host` 是否一致；宿主信任列表经 `webRuntime` 可选注入读取。
-- **push 检测锚定子命令**：`git` 之后跳过全局旗标与环境变量赋值再取子命令，`bash -lc` / `sh -c` 的引号载荷递归分类——引号里的 push 逃不过检测，commit message 与普通文字里的 "push" 不会触发误报。
-- **裸 push 放行链收紧**：remote 解析失败重试一次，仍失败且项目开启 enforce 时拒绝（fail-closed）。
-- **`GIT_CONFIG_GLOBAL` 回接用户全局配置**：生成的 gitconfig 首行 `include` 用户级 gitconfig，`user.name` / `user.email` / `http.proxy` 照常生效；空 `helper =` 的清空语义在 include 顺序下经实测保持正确。
-- **配置文件损坏隔离**：解析失败时把坏文件改名保留为 `<原名>.corrupt-<时间戳>` 并回退默认值，现场不丢。
-- **项目 key realpath 归一**：存在路径经 `realpathSync` 折叠 Windows 8.3 短名与符号链接；自检新增幂等回归。
-- **gitlab 默认值补全**：`PROVIDER_DEFAULTS.gitlab` → `gitlab.com` / `https://gitlab.com/api/v4`，与 README 对齐。
-- **脚本修复**：strip-mount 按 `/\r?\n/` 切分并保留原 EOL 风格，id 匹配改 `(?![\w-])` 防止前缀误删；bundle-check 检出 ignoredBuilds 退非 0；npm/pnpm registry 查询限时（bash `timeout`、PowerShell `Start-Job`）；安装后验证提示改文件级核验；`npm test` 注释、0600 的 POSIX 口径、helper 进程表述等文档修正。
-- **文案与清理**：token 提示照实写落盘位置（`$DSH_HOME/git-forge/secrets.json`），footer 照实写认证归属（HTTPS 由本插件 helper，SSH 仍走系统 SSH）；摘除未接线的 `openOfficial` 与 `joinUnderRoot`。
+- Agent shell 继承用户的 Git 全局配置，包括提交身份和代理设置。通过符号链接或 Windows 短路径访问同一工作区时，使用同一份授权。
+- 插件读取损坏的 JSON 配置时将原文件另存后使用默认值。GitLab 账号默认使用 `gitlab.com` 和 `https://gitlab.com/api/v4`。
 
 ### Changed
 
-- **Backfill of three changes shipped after 1.1.0** (7c3ffdb / 8985418 / e631ade):
-  - install docs collapsed to the npm path and version badges switched to npm;
-  - install scripts require `--profile` / `-Profile`; a missing or unknown profile lists the existing ones and exits 2;
-  - install scripts extract `scripts/lib/*.cjs` helpers (ws-exclude / bundle-check / strip-mount) and gate profile rewrites behind an explicit, idempotent `--fix-profile` with write-back verification.
-- **`dsh.client.inject` declares both packages**: `@deepseek-ai/dsh-client-locale` and `@deepseek-ai/dsh-client-ui-sidebar-right` (both were already peers in `peerDependencies`).
-- **`sync-to-dsh.sh` requires `DSH_PROFILE`** (`desktop` for the desktop app); an empty value errors with exit 2. The README development and requirements sections follow suit.
+- Install scripts require an existing DSH profile and rewrite its configuration only when repair is explicitly requested. The development sync script also requires `DSH_PROFILE`.
+
+### Security
+
+- The sidebar API rejects browser requests marked as cross-site. If `Sec-Fetch-Site` is absent but `Origin` is present, it checks that the origin matches the request host.
+- Push checks recognize Git global options and pushes inside `bash -lc` and `sh -c`, while distinguishing ordinary text in commit messages. With enforcement enabled, a bare push is denied if its target still cannot be resolved after a retry.
 
 ### Fixed
 
-- **Sidebar API same-origin checks**: `Sec-Fetch-Site: cross-site` is always rejected; when the header is absent, `Origin` must match the `Host` header; the host trust list is read through an optional `webRuntime` injection.
-- **Push detection anchors the subcommand**: global flags and env assignments after `git` are skipped before the subcommand is read, and quoted payloads of `bash -lc` / `sh -c` are classified recursively — a push inside quotes is caught, while "push" inside commit messages or prose no longer triggers false positives.
-- **Bare-push resolution chain tightened**: a failed remote resolution retries once and then rejects when the project enforces grants (fail-closed).
-- **`GIT_CONFIG_GLOBAL` reconnects the user's global config**: the generated gitconfig `include`s the user-level gitconfig on its first line, so `user.name` / `user.email` / `http.proxy` keep working; the empty `helper =` reset semantics hold under that include order (verified empirically).
-- **Corrupt config quarantine**: a config file that fails to parse is renamed to `<name>.corrupt-<timestamp>` and defaults take over, preserving the evidence.
-- **Project keys realpath-normalized**: existing paths collapse through `realpathSync`, folding Windows 8.3 short names and symlinks; a smoke-test regression covers idempotence.
-- **gitlab defaults completed**: `PROVIDER_DEFAULTS.gitlab` → `gitlab.com` / `https://gitlab.com/api/v4`, matching the README.
-- **Script fixes**: strip-mount splits on `/\r?\n/` and preserves the file's EOL style, and its id match uses `(?![\w-])` to avoid over-deleting prefixed ids; bundle-check exits non-zero when ignoredBuilds is detected; npm/pnpm registry lookups are time-bounded (bash `timeout`, PowerShell `Start-Job`); the post-install verification hint is file-based; plus documentation corrections (`npm test` description, POSIX-only `0600` wording, helper process wording).
-- **Wording and cleanup**: the token hint states the real on-disk location (`$DSH_HOME/git-forge/secrets.json`) and the footer states the real auth ownership (HTTPS via this plugin's helper, SSH stays with the system); the unwired `openOfficial` and `joinUnderRoot` were removed.
+- Agent shells inherit the user’s global Git configuration, including commit identity and proxy settings. Accessing the same workspace through a symlink or a Windows short path uses the same grants.
+- When reading corrupt JSON configuration, the plugin archives the original file before using defaults. GitLab accounts default to `gitlab.com` and `https://gitlab.com/api/v4`.
 
 ## [1.1.0] - 2026-10-09
 
 ### 变更
 
-- **面板挂到 DSH 官方右侧栏。** `lib/client.js` 的挂载从第三方侧栏宿主的 `registerTab` 换成官方 `sidebarRightTabs.register` 加 `sidebar.right.pane.tab` / `sidebar.right.pane.tab.title` 两个席位：座位正文与标题由框架注入 owner props（`sessionId`、`useTabInfo`），引导页入口带自己的说明文字（`guideDesc`，中英各一条）。`package.json` 移除 `dsh-better-sidebar` peer 与两个相关关键词，新增 `@deepseek-ai/dsh-client-ui-sidebar-right` peer。
-- **客户端不再向宿主端传 `cwd`。** `getProjectContext` 只带 `sessionId`，会话工作区由宿主从会话 header 解析；原先客户端拿侧栏宿主的 `scope.cwd` 当回退提示。
-- **DSH 版本下限抬到 `0.2.0-rc.2`。** `engines.dsh` 与 `@deepseek-ai/dsh-client-locale` peer 同步收窄为 `>=0.2.0-rc.2 <0.3.0-0`。
+- 「Git 凭据」面板移至 DSH 官方右侧栏，不再依赖 `dsh-better-sidebar`。所需 DSH 最低版本为 `0.2.0-rc.2`。
+- 侧栏按会话标识打开项目授权，由宿主确定工作区，而不是由客户端提供目录。
 
 ### Changed
 
-- **The panel now mounts into the DSH right sidebar.** `lib/client.js` swaps the third-party sidebar host's `registerTab` for the official `sidebarRightTabs.register` plus the `sidebar.right.pane.tab` / `sidebar.right.pane.tab.title` seats: the framework injects the pane's owner props (`sessionId`, `useTabInfo`) and the guide-page entry carries its own description (`guideDesc`, one line per language). `package.json` drops the `dsh-better-sidebar` peer and its two keywords, and gains a `@deepseek-ai/dsh-client-ui-sidebar-right` peer.
-- **The client no longer sends `cwd` to the host.** `getProjectContext` carries `sessionId` only and the host resolves the session workspace from the session header; the client previously passed the sidebar host's `scope.cwd` as a fallback hint.
-- **The DSH floor is raised to `0.2.0-rc.2`.** `engines.dsh` and the `@deepseek-ai/dsh-client-locale` peer narrow to `>=0.2.0-rc.2 <0.3.0-0` together.
+- The Git Credentials panel moved to the official DSH right sidebar and no longer requires `dsh-better-sidebar`. The minimum DSH version is `0.2.0-rc.2`.
+- The sidebar opens project grants by session ID. The host determines the workspace instead of accepting a directory from the client.
 
 ## [1.0.1] - 2026-10-04
 
 ### 新增
 
-- 插件有了自己的图标：包根 `icon.svg`（36×36，橙红渐变铁砧 + 白色分支负形），由 `package.json` 顶层 `icon` 字段声明并列入 `files`。插件列表里不再显示 DSH 的默认图形。
-- 侧边栏标签图标改用同一张图：`lib/client.js` 不再自画 24 画板的节点图标，改为内联渲染 `icon.svg` 的铁砧与分支（按 36 画板绘制，再放大 1.3 倍以贴合侧边栏的视觉重量）。插件列表与侧边栏因此是同一张标。
-- 插件列表里的显示名与描述有了中英两份（`locale/en.json`、`locale/zh.json` 的 `meta.title` 与 `meta.description`），中文名定为「Git 凭据管理」；`package.json` 的 `exports` 与 `files` 相应放行 `locale/*.json`。此前该处回退成包名与英文 `description`，在中文界面里中英混排。
+- 插件列表和侧栏共用铁砧与 Git 分支图标；插件名称和说明支持中文和英文。
+
+### 变更
+
+- DSH 兼容范围为 `>=0.1.7-rc.2 <0.3.0-0`，包括 DSH 0.2 系列。
+
+### 修复
+
+- Git for Windows 上的 HTTPS 操作可以在无人值守的 agent shell 中调用凭据助手：系统凭据选择器不会弹窗阻塞，Node.js 或助手路径中包含空格也可正常运行。
+- 安装脚本默认安装本仓库的插件，并检查 Node.js 主版本；本地源码通过 DSH 插件管理器登记。宿主缺少 shell 环境或策略提示服务时，插件会记录警告。
 
 ### Added
 
-- The plugin now ships its own icon: `icon.svg` at the package root (36×36, an orange-to-red gradient anvil with a white branch as negative space), declared through the top-level `icon` field in `package.json` and listed in `files`. The plugin list no longer falls back to the default DSH artwork.
-- The sidebar tab icon now renders the same artwork as `icon.svg` instead of a separate 24-unit node glyph: `lib/client.js` draws the anvil and branch on the 36-unit canvas and scales them 1.3× to match the sidebar's visual weight. The plugin list and the sidebar therefore carry one mark.
-- The plugin's display name and description in the plugin list now ship in both languages (`meta.title` and `meta.description` in `locale/en.json` and `locale/zh.json`), with the Chinese name settled as 「Git 凭据管理」; `exports` and `files` in `package.json` admit `locale/*.json` accordingly. The list previously fell back to the package name and the English `description`, mixing languages inside a Chinese interface.
+- The plugin list and sidebar share an anvil and Git branch icon. The plugin name and description are available in Chinese and English.
+
+### Changed
+
+- The DSH compatibility range is `>=0.1.7-rc.2 <0.3.0-0`, including the DSH 0.2 series.
+
+### Fixed
+
+- HTTPS operations on Git for Windows can invoke the credential helper in unattended agent shells: the system credential picker does not block on a dialog, and spaces in the Node.js or helper path are handled correctly.
+- Install scripts select this repository’s plugin by default and check the Node.js major version. Local source checkouts are registered through the DSH plugin manager. The plugin logs a warning when the host lacks the shell environment or policy prompt service.
 
 ## [1.0.0] - 2026-09-28
 
 ### 变更
 
-- **声明 DSH 兼容性元数据。** `package.json` 现携带 `dsh.manifestVersion: 1`、`engines.dsh: ">=0.1.7-rc.2 <0.3.0-0"`（作者声明的兼容 DSH 范围，与 `engines.node` 并列；后者随当前生态主流提到 `>=20`），以及覆盖同一范围的 `@deepseek-ai/dsh-client-locale` peer——它同时覆盖 0.1.7 与 0.2 两条线（0.1.7-rc.2、0.2.0-rc.1、0.2.0 及后续 0.2.x），上界写作 `<0.3.0-0` 以免放行 0.3 的预发布。自 DSH 0.1.7-rc.1 起，插件闸门会把 `@deepseek-ai/dsh` / `@deepseek-ai/dsh-*` 的 peer 范围与运行时版本比对（未声明 DSH peer 则不施加约束）——此前本插件没有任何 DSH peer，在任何宿主上都被静默放行。`dsh.manifestVersion` 与 `engines.dsh` 按清单规范仍只是声明字段。
+- 安装要求 Node.js 20 或更高版本；插件声明的 DSH 兼容范围为 `>=0.1.2-rc.1 <0.2.0`。
 
 ### 修复
 
-- **安装脚本装的是本仓库，且 node 前置检查与 `engines.node` 一致。** `scripts/install.sh` / `scripts/install.ps1` 的 `GITHUB_REPO` 默认值此前仍指向上游仓库 `thirsty5034/dsh-git-forge`，按脚本安装拿到的是上游最后发布的 v0.1.5（无 DSH 兼容声明、无 Windows 路径修复）；现在默认本仓库。两处 node 检查此前只判断「命令存在」并提示 `>= 18`，现在按 `engines.node` 真正校验主版本（`>= 20`）。
-- **本地同步脚本改走官方入口。** `scripts/sync-to-dsh.sh` 此前把文件复制进 `$DSH_HOME/local-plugins/dsh-git-forge`，而当前运行时不读取该目录（对整棵运行时搜索 `local-plugins` 零命中），等于静默无效；现在改为 `dsh plugin --profile <profile> add "link:<repo>"`，由 DSH 自己登记 `dsh.profile.bundles`。
-- **可选服务缺失时不再静默降级。** `shellEnv` / `systemPrompt` 不可用时，`DSH_GIT_FORGE_*` 提示变量与策略提示段都不会注册，此前没有任何日志；现在各打印一行 `[dsh-git-forge]` 警告，便于区分「宿主缺该服务」与「插件没生效」。
-- **`@deepseek-ai/cordis` peer 对齐到验证过的版本。** 从 `^4.0.1` 改为 `^4.0.4`（运行时实装 4.0.4，0.2.0-rc.1 的 locale 包亦声明 `~4.0.4`），使声明不再早于实测版本。
-- **路径包含判断在 Windows 上恢复正常。** `isPathInsideRoots` 用 `root + '/'` 拼前缀且大小写敏感地比较，而 `normalizeProjectKey` 返回平台原生形态的键——于是 Windows 上所有包含判断全部失败，连 `C:\ws\child` 在 `C:\ws` 内也判为否。现在包含判断在「统一分隔符、Win32 折叠大小写」的比较形态上进行；存储的键保持平台原生形态不变。`normalizeProjectKey` 也会在不破坏 `C:\` 盘符根的前提下剥掉结尾反斜杠。
-- **自检用例可移植。** `normalizeProjectKey` / `resolveGrantsProjectKey` / `resolveHelperProjectKey` 三处夹具硬编码 POSIX 路径，导致 `node scripts/smoke-test.mjs` 在任何 Windows 检出上固定挂 3 个用例。夹具现在经 `normalizeProjectKey` 推导期望值，并新增分隔符处理的回归用例。
-- **Git for Windows 下 agent 的 HTTPS git 不再永久卡死，且凭据 helper 现在真正会执行**。Git for Windows 在系统级 gitconfig 注册了 GUI 程序 `credential.helper = helper-selector`，而各配置层的 helper 是**叠加**的，于是它会排在本插件 helper **前面**被执行，在无头 agent shell 里弹出无人可答的对话框、永久阻塞。除此之外，生成的 gitconfig 里 `!<cmd>` helper 行的内层引号会被 gitconfig 解析器吞掉：`!"C:\Program Files\nodejs\node.exe" "…"` 解析后只剩下*未加引号*的 `C:\Program Files\nodejs\node.exe`，shell 于是在空格处切分，git 报 `line 1: C:Program: command not found`——helper 根本没有执行过。`ensureHelperGitconfig()` 现在会在插件 helper 之前写入一行空的 `helper =`（清空此前累积的所有 `credential.helper`，从而丢弃系统级 selector），并把 helper 命令的内层引号转义为 `\"`；此前那套 `GIT_CONFIG_COUNT` / `GIT_CONFIG_KEY_n` / `GIT_CONFIG_VALUE_n` 注入已移除，因为那些键根本到不了 agent shell，只剩下一个没有对应键的 `GIT_CONFIG_COUNT`，使每一条 git 命令都以 `fatal: unable to parse command-line config` 失败。修复仅限生成的 gitconfig（`$DSH_HOME/git-forge/gitconfig`）。
+- Windows 上判断项目路径是否位于工作区内时，能正确处理大小写、路径分隔符和盘符根目录。
 
 ### Changed
 
-- **Declare DSH compatibility metadata.** `package.json` now carries `dsh.manifestVersion: 1`, `engines.dsh: ">=0.1.7-rc.2 <0.3.0-0"` (the author-declared compatible DSH range, sitting beside `engines.node`, which is raised to `>=20` like current ecosystem plugins), and a `@deepseek-ai/dsh-client-locale` peer over the same range — it covers the 0.1.7 and 0.2 lines alike (0.1.7-rc.2, 0.2.0-rc.1, 0.2.0 and later 0.2.x), with `<0.3.0-0` as the upper bound so that 0.3 prereleases stay out. Since DSH 0.1.7-rc.1 the plugin gate compares `@deepseek-ai/dsh` / `@deepseek-ai/dsh-*` peer ranges against the running runtime (missing peers impose no constraint) — without a DSH peer this plugin passed every host silently. `dsh.manifestVersion` and `engines.dsh` stay declarative, as the manifest spec defines them.
+- Installation requires Node.js 20 or later. The declared DSH compatibility range is `>=0.1.2-rc.1 <0.2.0`.
 
 ### Fixed
 
-- **The install scripts install this repository, and the node precheck matches `engines.node`.** Their `GITHUB_REPO` default still pointed at the upstream `thirsty5034/dsh-git-forge`, so running them fetched the upstream v0.1.5 — no DSH compatibility declarations, no Windows path fix; they now default to this repository. Both node checks only tested that the command exists and said `>= 18`; they now verify the major version against `engines.node` (`>= 20`).
-- **The local sync script uses the official entry point.** `scripts/sync-to-dsh.sh` copied files into `$DSH_HOME/local-plugins/dsh-git-forge`, a directory the current runtime never reads (searching the whole runtime for `local-plugins` returns nothing), so it was silently a no-op; it now runs `dsh plugin --profile <profile> add "link:<repo>"` and lets DSH register `dsh.profile.bundles` itself.
-- **Optional services no longer degrade silently.** When `shellEnv` / `systemPrompt` are unavailable, the `DSH_GIT_FORGE_*` hints and the policy section are not registered — previously with no log at all. Each now prints a one-line `[dsh-git-forge]` warning, so "the host lacks that service" is distinguishable from "the plugin did nothing".
-- **The `@deepseek-ai/cordis` peer is aligned with the tested version.** It moves from `^4.0.1` to `^4.0.4` (the runtime ships 4.0.4 and the 0.2.0-rc.1 locale package declares `~4.0.4`), so the declaration no longer reaches back before what has been verified.
-- **Path containment checks now work on Windows.** `isPathInsideRoots` built its prefix as `root + '/'` and compared case-sensitively, while `normalizeProjectKey` returns platform-native keys — so on Windows every containment check failed, even `C:\ws\child` inside `C:\ws`. Containment is now judged on a separator-unified comparison form (case-folded on Win32); stored keys keep their platform-native shape. `normalizeProjectKey` also strips a trailing backslash without breaking `C:\` drive roots.
-- **Smoke tests are platform-portable.** The `normalizeProjectKey` / `resolveGrantsProjectKey` / `resolveHelperProjectKey` fixtures hard-coded POSIX paths, so `node scripts/smoke-test.mjs` failed 3 tests on any Windows checkout. Fixtures now derive expectations through `normalizeProjectKey`, and a regression test covers separator handling.
-- **Agent HTTPS git no longer hangs on Git for Windows, and the credential helper now actually runs.** Git for Windows registers a GUI `credential.helper = helper-selector` in its system gitconfig, and helpers accumulate across config scopes, so the selector ran **before** this plugin’s helper and blocked forever on a dialog that a headless agent shell can never answer. On top of that, the `!<cmd>` helper line in the generated gitconfig had its inner quotes swallowed by the gitconfig parser: `!"C:\Program Files\nodejs\node.exe" "…"` survived parsing as the *unquoted* `C:\Program Files\nodejs\node.exe`, so the shell split it and git reported `line 1: C:Program: command not found` — the helper never ran at all. `ensureHelperGitconfig()` now writes an empty `helper =` line — which clears every `credential.helper` accumulated so far, dropping the system-level selector — before the plugin helper, and escapes the helper command’s inner quotes as `\"`; the earlier `GIT_CONFIG_COUNT` / `GIT_CONFIG_KEY_n` / `GIT_CONFIG_VALUE_n` injection was removed because those keys never reached agent shells, leaving a `GIT_CONFIG_COUNT` with no matching keys and making every git command fail with `fatal: unable to parse command-line config`. The fix is confined to the generated gitconfig (`$DSH_HOME/git-forge/gitconfig`).
+- Workspace containment checks on Windows correctly handle case, path separators and drive roots.
 
 ## [0.1.5] - 2026-09-08
 
 ### 修复
 
-- 从 `dsh.client.inject` 移除 **`@deepseek-ai/dsh-client-runtime`**。该包在 DSH 0.1.2 已删除（社区升级卡 `DSH-0.1.2-A1-25`）；保留该幻影依赖会让 client 装配行在 0.1.2 宿主上 pending / 进不了 boot graph。保留 `@deepseek-ai/dsh-client-locale`（提供 `ctx.locale`）。首个打 tag 的版本——同时覆盖 0.1.4 期的功能（R1 Host 凭据 helper、GitForge 模型工具注册、monorepo 项目 key）。
+- 侧栏可以在 DSH `0.1.2` 上加载；客户端只要求宿主提供实际使用的语言服务。
 
 ### Fixed
 
-- Remove **`@deepseek-ai/dsh-client-runtime`** from `dsh.client.inject`. The package was deleted in DSH 0.1.2 (community upgrade card `DSH-0.1.2-A1-25`); keeping the phantom in `inject` left the client assembly row pending / out of the boot graph on 0.1.2 hosts. `@deepseek-ai/dsh-client-locale` is retained (provides `ctx.locale`). First tagged release — also covers the 0.1.4-era features (R1 Host credential helper, GitForge model-tool registration, monorepo project key).
+- The sidebar can load on DSH `0.1.2`. The client requires only the locale service it uses from the host.
 
 ## [0.1.4] - 2026-08-18
 
 ### 修复
 
-- agent shell 注入 **`DSH_GIT_FORGE_PROJECT`**（会话工作区），子仓 cwd 仍用工作区授权
-- helper 在无 env 时 **向上匹配** `/workspace` 下 grants key
-- push guard 对裸 **`git push` / `git push origin`** 同步解析 `remote get-url` 再裁决
-- 文档与 `get_policy` 补充 project key 来源与 `list_accounts`
+- 在工作区内的子仓运行 Git 时，凭据助手按 `DSH_GIT_FORGE_PROJECT` 取用会话工作区的授权；缺少该变量时，从当前目录向上查找工作区授权。
+- `git push` 和 `git push origin` 会先解析远程地址，再检查目标主机是否获准推送。
 
 ### Fixed
 
-- Inject **`DSH_GIT_FORGE_PROJECT`** (session workspace) into agent shells so monorepo subfolder `git` cwd still uses workspace grants
-- Credential helper **walks parent dirs** under `/workspace` when env is unset
-- Push guard resolves **bare `git push` / `git push origin`** via `git remote get-url` before policy check
-- Docs + `get_policy` describe project key sources and `list_accounts`
+- When Git runs in a repository nested inside a workspace, the helper uses `DSH_GIT_FORGE_PROJECT` to find the session workspace grants. Without that variable, it searches parent directories for workspace grants.
+- `git push` and `git push origin` resolve the remote URL before checking whether its host is authorized for pushes.
 
 ## [0.1.3] - 2026-08-18
 
 ### 新增
 
-- **Agent HTTPS git 认证**：Host 侧 credential helper + `$DSH_HOME/git-forge/gitconfig`（`GIT_CONFIG_GLOBAL`），agent bash 中的 `git` 可透明使用侧栏已授权账号
-- **R1 选号**：同一 host 仅当恰好 1 个已授权 token 账号时自动注入；token 永不进模型上下文
-- health：`gitCredentialHelper` / `gitconfigPath` / `gitConfigGlobalActive`
+- Agent shell 中的 HTTPS Git 可通过宿主凭据助手认证。只有目标主机恰好有一个已授权 token 账号时，助手才提供凭据；token 不进入模型上下文。
+- 健康检查显示凭据助手状态、Git 配置路径和该配置是否生效。
 
 ### Added
 
-- **Agent HTTPS git auth** via Host-only git credential helper (`scripts/git-credential-dsh-git-forge.mjs`) and `$DSH_HOME/git-forge/gitconfig` (`GIT_CONFIG_GLOBAL` for agent shells)
-- **R1 account selection**: exactly one authorized token account per remote host; tokens never enter model context
-- Health: `gitCredentialHelper`, `gitconfigPath`, `gitConfigGlobalActive`
+- HTTPS Git in agent shells can authenticate through the host credential helper. It supplies credentials only when exactly one token account is granted for the target host. Tokens do not enter the model context.
+- The health check reports the credential helper status, the Git configuration path and whether that configuration is active.
 
 ## [0.1.2] - 2026-08-18
 
 ### 修复
 
-- **GitForge 作为全局模型工具正确注册**（不再依赖 out-of-tree 解析 `@deepseek-ai/dsh-tools` 的 `defineTool`；改用与 modlens / dsh-ssh-tunnel 相同的裸 JSON Schema + 必填 `output`）。此前标准对话工具列表中看不到该工具。
-- `health.version` 与 `package.json` 对齐；`health.gitForgeRegistered` 报告注册状态
+- 标准对话可以使用 `GitForge` 工具。健康检查看得到工具注册状态和实际插件版本。
 
 ### Fixed
 
-- **GitForge registers as a global model tool** without importing `@deepseek-ai/dsh-tools` (raw JSON-Schema definition + required `output`, same pattern as modlens / dsh-ssh-tunnel). Out-of-tree `defineTool` resolution left the tool missing from standard chat catalogs.
-- `health.version` tracks `package.json`; `health.gitForgeRegistered` reports registration status
+- Standard chat sessions can use the `GitForge` tool. The health check shows its registration status and the installed plugin version.
 
 ## [0.1.1]
 
-### 变更
-
-- 对齐 dsh-better-sidebar 的公开仓库结构
-- 增加 `scripts/install.sh` / `install.ps1`（默认 GitHub；`--from npm` 预留）
-- package.json：`repository` / `homepage` / `bugs` / `publishConfig`
-
 ### 新增
 
-- Gitea/GitLab：保存/探测时自动补全 API 路径（站点根 → `/api/v1` 或 `/api/v4`）
-- 探测增加 10s 超时，返回具体 URL 与失败原因
-- 账号行内显示探测成功/失败
-
-### Changed
-
-- Public GitHub repo layout aligned with dsh-better-sidebar
-- `scripts/install.sh` / `install.ps1` (GitHub default; `--from npm` ready)
-- package.json: `repository` / `homepage` / `bugs` / `publishConfig`
+- 提供命令行和 PowerShell 安装脚本，可从 GitHub 安装插件。
+- Gitea 和 GitLab 账号可直接填写站点根地址，插件补全 API 路径。账号行显示探测结果，失败时给出请求地址和原因；探测超时为 10 秒。
 
 ### Added
 
-- Auto-normalize Gitea/GitLab API bases (site root → `/api/v1` or `/api/v4`)
-- Probe timeout (10s) with explicit URL/error text
-- Inline per-account probe result in the sidebar
+- Shell and PowerShell install scripts can install the plugin from GitHub.
+- Gitea and GitLab accounts accept the site root and fill in the API path. Each account row shows the probe result, including the request URL and reason on failure. Probes time out after 10 seconds.
 
 ## [0.1.0]
 
 ### 新增
 
-- 首版：better-sidebar「Git 凭据」Tab
-- 账号库（GitHub / Gitea / GitLab / Gitee / Bitbucket）
-- 按项目授权 + enforce push
-- Host `tools.guard` 拦截未授权 `git push` / `git remote add|set-url`
-- 模型工具 `GitForge`
-- UI 对齐 dsh-ssh-tunnel
+- 在 `dsh-better-sidebar` 中管理 GitHub、Gitea、GitLab、Gitee 和 Bitbucket 账号，并为每个项目选择可用账号。
+- 开启推送限制后，宿主按授权主机检查 `git push`、`git remote add`、`git remote set-url`。`GitForge` 工具供模型查询项目策略。
 
 ### Added
 
-- Initial release: better-sidebar **Git Forge** tab
-- Account library (GitHub / Gitea / GitLab / Gitee / Bitbucket)
-- Per-project grants + enforce push
-- Host `tools.guard` for unauthorized `git push` / `git remote add|set-url`
-- Model tool `GitForge`
-- UI aligned with dsh-ssh-tunnel
+- Manage GitHub, Gitea, GitLab, Gitee and Bitbucket accounts in `dsh-better-sidebar` and select which accounts each project can use.
+- With push enforcement enabled, the host checks `git push`, `git remote add` and `git remote set-url` against authorized hosts. The `GitForge` tool lets the model query project policy.
